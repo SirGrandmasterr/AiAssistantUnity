@@ -8,6 +8,7 @@ TagManager:
   - Picture
   - Location
   - Crushable
+  - CanBeRepaired
   layers:
   - Default
   - TransparentFX

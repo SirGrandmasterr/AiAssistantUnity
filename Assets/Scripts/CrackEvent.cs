@@ -18,6 +18,7 @@ public class CrackEvent : MonoBehaviour
         {
             cracker.Play();
             print(other.gameObject.name);
+            other.gameObject.tag = "CanBeRepaired";
             other.gameObject.SetActive(false);
             assistantEars.HearCrashingSound(other.transform.parent.GameObject(), locationUpdater.location);
         }

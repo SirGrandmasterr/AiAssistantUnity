@@ -21,6 +21,7 @@ public class Brain : MonoBehaviour
     public Dictionary<string, int> actionDict;
     private Random rnd;
     private Queue<GameObject> repairQueue;
+    private bool OnRepairQuest;
 
     [Serializable]
     public struct AssistantContext
@@ -181,6 +182,11 @@ public class Brain : MonoBehaviour
         msg.assistantContext = ac;
         msg.playerContext = pc;
         msg.eventContext = new EventContext();
+
+        if (PlayerInConversation && PlayerGaze.Valid)
+        {
+            msg.assistantContext.focusedAsset = PlayerGaze.ObjectOfInterest.name;
+        }
         
         print(JsonUtility.ToJson(msg));
         _websocket.SendText(JsonUtility.ToJson(msg));
@@ -284,6 +290,8 @@ public class Brain : MonoBehaviour
                 SendHistoryUpdate("NARRATOR: " + "The Assistant started following the visitor.\n");
                 movementController.FollowVisitor(); 
                 break;
+            case "provideArtInformation":
+                break;
             case "walkToVisitor":
                 movementController.WalkToPlayer();
                 break;
@@ -325,6 +333,7 @@ public class Brain : MonoBehaviour
                     case 2:
                         print("Case 2"); //
                         var targetobj = repairQueue.Dequeue(); // We do get the object as an answer, but this is less performance intensive.
+                        OnRepairQuest = true;
                         movementController.Walk(targetobj);
                         SendActionUpdate(msg.token, msg.actionName, msg.stage +1, true, "", "", new  string[]{"followVisitor"} );
                         break;
@@ -432,8 +441,13 @@ public class Brain : MonoBehaviour
     {
         while (true)
         {
+            if (PlayerInConversation || movementController.movementState == 2)
+            {
+                bored = 30f;
+            }
             if (bored <= 0)
             {
+                print("I'm bored and will think about what to do.");
                 SendInnerThoughtEvent();
                 bored = rnd.Next(10, 20);
             }
@@ -466,13 +480,26 @@ public class Brain : MonoBehaviour
             list.Add("followVisitor");
         }
 
-        if (speech)
+        if (speech && !PlayerInConversation)
         {
             list.Add("explainWhatYouCanDo");
             list.Add("continueConversation");
             list.Add("walkToObject");
             list.Add("walkToVisitor");
-            list.Add("playMusic");
+            if (musicManager.isPlaying)
+            {
+                list.Add("stopMusic");
+            }
+            else
+            {
+                list.Add("playMusic");
+            }
+        } else if (speech && PlayerInConversation)
+        {
+            list.Add("explainWhatYouCanDo");
+            list.Add("continueConversation");
+            list.Add("provideArtInformation");
+            list.Add("walkToObject");
             if (musicManager.isPlaying)
             {
                 list.Add("stopMusic");

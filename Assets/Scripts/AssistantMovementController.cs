@@ -137,6 +137,7 @@ public class AssistantMovementController : MonoBehaviour
                         var next = _movementqueue.Dequeue();
                         if (next.State == 3)
                         {
+                            print("Setting Destination to "+ next.Obj.name);
                             agent.SetDestination(next.Obj.transform.position);
                         }
                         else
@@ -163,21 +164,19 @@ public class AssistantMovementController : MonoBehaviour
             case true when !playerGaze.Valid:
             {
                 //Assistant is not following
-                Debug.Log(
-                    "I should be facing the player. We are in Conversation, but the Player looks at me or no specific Artwork. ");
+                
                 Vector3 playerPosition = new Vector3(player.position.x, this.transform.position.y, player.position.z);
                 transform.LookAt(playerPosition);
                 break;
             }
             case true when playerGaze.Valid:
                 //Assistant is following and will look where the player looks at.
-                Debug.Log(
-                    "I should be facing the player, but as I am following and the player gazes at Art, I should follow his gaze. ");
+                
                 var gazePoint = new Vector3(playerGaze.ObjectOfInterest.transform.position.x, transform.position.y,
                     playerGaze.ObjectOfInterest.transform.position.z);
                 transform.LookAt(gazePoint);
                 head.LookAt(playerGaze.ObjectOfInterest.transform);
-                Debug.Log("I am looking at " + playerGaze.ObjectOfInterest.name);
+                
 
 
                 break;
