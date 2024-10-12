@@ -81,13 +81,13 @@ public class MusicAction : MonoBehaviour
         var respstring = await response.Content.ReadAsStringAsync();
         
         BlankframePlaylist playlist = JsonUtility.FromJson<BlankframePlaylist>(respstring);
-        print(playlist);
         var feedback = new musicFeedback();
         feedback.token = token;
         feedback.query = searchterm;
         if (playlist.tracks.Length == 0)
         {
             feedback.found = false;
+            print("Broadcasting Feedback: " + feedback.query + " " + "false" + " " + feedback.token);
             gameObject.BroadcastMessage("MusicFound", feedback);
         }
         else

@@ -6,6 +6,8 @@ TagManager:
   tags:
   - CinemachineTarget
   - Picture
+  - Location
+  - Crushable
   layers:
   - Default
   - TransparentFX

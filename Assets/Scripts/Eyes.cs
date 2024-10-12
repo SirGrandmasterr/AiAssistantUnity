@@ -44,11 +44,6 @@ public class Eyes : MonoBehaviour
         StartCoroutine(UpdateVisibleObjectsOfInterest());
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-    }
-
     private float CheckAssistantPlayerDistance()
     {
         return Vector3.Distance(transform.position + _heightOffset, player.transform.position + _heightOffset);

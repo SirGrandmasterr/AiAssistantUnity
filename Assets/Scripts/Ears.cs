@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using Whisper.Utils;
@@ -48,9 +49,25 @@ namespace Whisper.Ears
             }
         }
 
-        public void HearCrashingSound()
+        public void HearCrashingSound(GameObject obj, string eventLocation)
         {
-            brain.A
+            string[] opts;
+            if (brain.AssetsInView.Contains(obj.name))
+            {
+                Brain.EventContext ctxInView;
+                ctxInView = new Brain.EventContext();
+                ctxInView.eventLocation = eventLocation;
+                ctxInView.relevantObjects = new[] { obj.name };
+                opts = new[] { "ignore", "repair" };
+                brain.AddToRepairQueue(obj);
+                brain.SendEnvEvent("NARRATOR: Visitor bumped into a sculpture, breaking the glass around it.\n", ctxInView, opts);
+                return;
+            }
+            Brain.EventContext ctxOutOfView;
+            ctxOutOfView = new Brain.EventContext();
+            opts = new[] { "ignore", "investigate" };
+            ctxOutOfView.eventLocation = eventLocation;
+            brain.SendEnvEvent("NARRATOR: The Assistant hears the sound of glass breaking.\n", ctxOutOfView, opts);
         }
 
         private void OnVadChanged(bool vadStop)
