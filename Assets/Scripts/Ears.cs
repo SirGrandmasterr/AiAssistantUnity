@@ -3,7 +3,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using Whisper.Utils;
-using Debug = UnityEngine.Debug;
 
 namespace Whisper.Ears
 {

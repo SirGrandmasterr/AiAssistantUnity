@@ -1,14 +1,7 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using Whisper.Ears;
 
 public class RepairEvent : MonoBehaviour
 {
-    
-    public AssetLocationUpdater locationUpdater;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -17,6 +10,7 @@ public class RepairEvent : MonoBehaviour
             
             print(other.gameObject.name);
             other.gameObject.SetActive(true);
+            other.gameObject.transform.GetChild(0).gameObject.SetActive(true);
             
         }
     }

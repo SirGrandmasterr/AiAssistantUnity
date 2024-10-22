@@ -1,9 +1,5 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using Unity.VisualScripting;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.AI;
 using Random = UnityEngine.Random;
@@ -92,7 +88,7 @@ public class AssistantMovementController : MonoBehaviour
 
                 break;
             case 2: //following player
-                agent.stoppingDistance = 2.0f;
+                agent.stoppingDistance = 2.2f;
                 agent.SetDestination(player.position);
                 if (Vector3.Distance(centrePoint.position, player.position) > 2)
                 {
@@ -101,7 +97,7 @@ public class AssistantMovementController : MonoBehaviour
 
                 if (agent.remainingDistance <= 5)
                 {
-                    agent.speed = 0.8f;
+                    agent.speed = 1.5f;
                     animator.Walk();
                 }
                 else
@@ -214,13 +210,13 @@ public class AssistantMovementController : MonoBehaviour
         _prevState = movementState;
         if (movementState == 1)
         {
-            movementState = 0;
+            Idle();
             agent.SetDestination(agent.transform.position);
         } else if (movementState == 3)
         {
             _prevTarget = agent.destination;
             agent.SetDestination(agent.transform.position);
-            movementState = 0;
+            Idle();
         }
         _prevRot = transform.rotation;
         _facePlayer = true;
@@ -299,11 +295,17 @@ public class AssistantMovementController : MonoBehaviour
         if (movementState == 3)
         {
             var mvmt = new MovementQueueStruct();
-            mvmt.State = 2;
+            mvmt.State = 3;
             mvmt.Obj = destination;
             _movementqueue.Enqueue(mvmt);
             return;
         }
+        agent.SetDestination(destination.transform.position);
+        movementState = 3;
+    }
+
+    public void WalkForce(GameObject destination)
+    {
         agent.SetDestination(destination.transform.position);
         movementState = 3;
     }

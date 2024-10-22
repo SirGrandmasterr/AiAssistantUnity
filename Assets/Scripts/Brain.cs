@@ -4,11 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using NativeWebSocket;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.InputSystem.XR;
 using UnityEngine.Serialization;
 using Random = System.Random;
 
@@ -21,7 +18,9 @@ public class Brain : MonoBehaviour
     public Dictionary<string, int> actionDict;
     private Random rnd;
     private Queue<GameObject> repairQueue;
-    private bool OnRepairQuest;
+    private bool repairAvailable;
+    public bool isSpeaking;
+    
 
     [Serializable]
     public struct AssistantContext
@@ -98,7 +97,7 @@ public class Brain : MonoBehaviour
     public Material headMaterial;
 
     private bool talkAndFollow;
-    public bool isSpeaking = false;
+    
     
 
     //
@@ -107,6 +106,8 @@ public class Brain : MonoBehaviour
     // Start is called before the first frame update
     private async void Start()
     {
+        isSpeaking = false;
+        repairAvailable = false;
         repairQueue = new Queue<GameObject>();
         rnd = new Random();
         bored = 30f;
@@ -136,7 +137,19 @@ public class Brain : MonoBehaviour
 
             if (msg.type == "speech")
             {
-                isSpeaking = true;
+                if (!isSpeaking)
+                {
+                    SendHistoryUpdate("ASSISTANT: '" + msg.text);
+                    isSpeaking = true;
+                }
+                else if (msg.actionName == "stopSpeak")
+                {
+                    SendHistoryUpdate(msg.text + "'");
+                }
+                else
+                {
+                    SendHistoryUpdate(msg.text);
+                }
                 Task task = webSocketTtsClient.ListenTo(msg.text);
                 return;
             }
@@ -188,7 +201,7 @@ public class Brain : MonoBehaviour
             msg.assistantContext.focusedAsset = PlayerGaze.ObjectOfInterest.name;
         }
         
-        print(JsonUtility.ToJson(msg));
+        print("Focused Asset: "+ msg.assistantContext.focusedAsset);
         _websocket.SendText(JsonUtility.ToJson(msg));
     }
 
@@ -296,6 +309,17 @@ public class Brain : MonoBehaviour
                 movementController.WalkToPlayer();
                 break;
             case "walkToObject":
+                switch (msg.stage)
+                {
+                    case 1:
+                        break;
+                    case 2:
+                        movementController.WalkForce(GameObject.Find(msg.text)); // Walk to location, then idle
+                        bored = rnd.Next(10, 20);
+                        break;
+                }
+
+                break;
             case "admireArt":    
                 switch (msg.stage)
                 {
@@ -333,8 +357,8 @@ public class Brain : MonoBehaviour
                     case 2:
                         print("Case 2"); //
                         var targetobj = repairQueue.Dequeue(); // We do get the object as an answer, but this is less performance intensive.
-                        OnRepairQuest = true;
                         movementController.Walk(targetobj);
+                        repairAvailable = false;
                         SendActionUpdate(msg.token, msg.actionName, msg.stage +1, true, "", "", new  string[]{"followVisitor"} );
                         break;
                     case 3:
@@ -468,6 +492,10 @@ public class Brain : MonoBehaviour
             list.Add("standIdle");
             list.Add("patrol");
             list.Add("admireArt");
+            if (repairAvailable)
+            {
+                list.Add("repair");
+            }
             return list.ToArray();
         }
         
@@ -520,14 +548,14 @@ public class Brain : MonoBehaviour
         {
             ctx.location = "unknown";
             ctx.assetsInView = new[] { "" };
-            ctx.inConversation = false;
+            ctx.inConversation = PlayerInConversation;
             ctx.playerUsername = "Sir Grandmasterr";
             return ctx;
         }
 
-        ctx.location = "gallery_lower";
+        ctx.location = "unknown";
         ctx.assetsInView = new[] { " " };
-        ctx.inConversation = false;
+        ctx.inConversation = PlayerInConversation;
         ctx.playerUsername = "Sir Grandmasterr";
         return ctx;
     }
@@ -537,6 +565,18 @@ public class Brain : MonoBehaviour
         if (PlayerVisible == update) return;
         PlayerVisible = update;
         SetHeadColor();
+    }
+
+    public void UpdateVisibleAssets(string[] objs)
+    {
+        AssetsInView = objs;
+        if (repairQueue.Count > 0 && movementController.movementState == 2)
+        {
+            if (AssetsInView.Contains(repairQueue.Peek().name))
+            {
+                repairAvailable = true;
+            }
+        }
     }
 
     public void UpdateConversationStatus(bool update)

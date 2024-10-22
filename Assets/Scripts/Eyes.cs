@@ -118,7 +118,7 @@ public class Eyes : MonoBehaviour
         {
             //Update Asset Array not every frame, but every 0.2 seconds. 
             yield return new WaitForSeconds(0.2f);
-            brain.AssetsInView = CheckVisibleObjectsOfInterest();
+            brain.UpdateVisibleAssets(CheckVisibleObjectsOfInterest());
         }
     }
 
@@ -168,7 +168,7 @@ public class Eyes : MonoBehaviour
         var hitColliders = Physics.OverlapSphere(hit.point, 0.2f, artlayer);
         if (hitColliders.Length <= 0)
         {
-            Debug.Log("No Hitcolliders.");
+            //Debug.Log("No Hitcolliders.");
             return new GazeObject() { Valid = false };
         }
 
@@ -182,7 +182,7 @@ public class Eyes : MonoBehaviour
             distance = newDistance;
             closest = collider1;
         }
-        Debug.Log(closest.transform.parent.name);
+        //Debug.Log(closest.transform.parent.name);
         return new GazeObject() { Valid = true, ObjectOfInterest = closest.GameObject().transform.parent.GameObject(), };
     } 
     
