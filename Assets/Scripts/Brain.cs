@@ -1,12 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NativeWebSocket;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Debug = UnityEngine.Debug;
 using Random = System.Random;
 
 public class Brain : MonoBehaviour
@@ -18,8 +20,10 @@ public class Brain : MonoBehaviour
     public Dictionary<string, int> actionDict;
     private Random rnd;
     private Queue<GameObject> repairQueue;
-    private bool repairAvailable;
+    public bool repairAvailable;
     public bool isSpeaking;
+    private Stopwatch sw;
+    private int tk;
     
 
     [Serializable]
@@ -91,6 +95,7 @@ public class Brain : MonoBehaviour
     public bool PlayerAudible;
     public bool PlayerVisible;
     public string[] AssetsInView;
+    public string[] PlayerAssetsInView;
     public bool PlayerInConversation;
     public GazeObject PlayerGaze;
     public float bored;
@@ -106,6 +111,8 @@ public class Brain : MonoBehaviour
     // Start is called before the first frame update
     private async void Start()
     {
+        tk = 0;
+        sw = new Stopwatch();
         isSpeaking = false;
         repairAvailable = false;
         repairQueue = new Queue<GameObject>();
@@ -113,7 +120,10 @@ public class Brain : MonoBehaviour
         bored = 30f;
         StartCoroutine(InnerThought());
         actionDict = new Dictionary<string, int>();
-        _websocket = new WebSocket("ws://localhost:3000/ws/id");
+        string url = PlayerPrefs.GetString("Address");
+        url = "ws://" + url + "/ws/" + PlayerPrefs.GetString("playerJwt");
+        Debug.Log(url);
+        _websocket = new WebSocket(url);
 
         _websocket.OnOpen += () =>
         {
@@ -121,7 +131,7 @@ public class Brain : MonoBehaviour
             LlamaWebsockRequest msg = new LlamaWebsockRequest();
             msg.messageType = "initializePlayer";
             msg.playerContext = new PlayerContext();
-            msg.playerContext.playerUsername = "Sir Grandmasterr";
+            msg.playerContext.playerUsername = PlayerPrefs.GetString("username");
             _websocket.SendText(JsonUtility.ToJson(msg));
         };
 
@@ -131,20 +141,21 @@ public class Brain : MonoBehaviour
 
         _websocket.OnMessage += bytes =>
         {
-            Debug.Log("Got a message from LlamaCommunicator");
+           
             //Decode bytes into String, assume it's JSON, Decode into Websocketmsg
             var msg = LlamaWebsockMsg.CreateFromJson(Encoding.UTF8.GetString(bytes));
-
             if (msg.type == "speech")
             {
                 if (!isSpeaking)
                 {
+                    //print(sw.ElapsedMilliseconds + "history tokens: " + tk);
                     SendHistoryUpdate("ASSISTANT: '" + msg.text);
                     isSpeaking = true;
                 }
                 else if (msg.actionName == "stopSpeak")
                 {
                     SendHistoryUpdate(msg.text + "'");
+                    isSpeaking = false; //remove
                 }
                 else
                 {
@@ -153,9 +164,8 @@ public class Brain : MonoBehaviour
                 Task task = webSocketTtsClient.ListenTo(msg.text);
                 return;
             }
-
             if (msg.type == "actionSelection")
-            {   // only single-stage actions for this
+            {   
                 var secondary = msg.text;
                 var original = msg.actionName;
                 msg.actionName = secondary;
@@ -164,11 +174,8 @@ public class Brain : MonoBehaviour
                 EvaluateAction(msg);
                 return;
             }
-
-            EvaluateAction(msg);
-                
-                    
             
+            EvaluateAction(msg);
         };
 
         // waiting for messages
@@ -182,6 +189,30 @@ public class Brain : MonoBehaviour
 #endif
     }
 
+    public void SendTestEvent()
+    {
+        SendHistoryUpdate("I will now explain the concept of programming. Programming is the process of designing, writing, testing, and maintaining the instructions that a computer follows to perform a specific task. These instructions are called programs. A program consists of a series of statements or commands that tell the computer what actions to take in order to achieve a particular goal. The programmer writes these statements using a programming language, which is a set of rules and syntax for communicating with computers. There are many different types of programming languages, I will now explain the concept of programming. Programming is the process of designing, writing, testing, and maintaining the instructions that a computer follows to perform a specific task. These instructions are called programs. A program consists of a series of statements or commands that tell the computer what actions to take in order to achieve a particular goal. The programmer writes these statements using a programming language, which is a set of rules and syntax for communicating with computers. There are many different types of programming languages... is it.");
+        sw.Restart();
+        tk += 200;
+        var ac = InquireAssistantContext(true,false);
+        var pc = InquirePlayerContext();
+        LlamaWebsockRequest msg = new LlamaWebsockRequest();
+        msg.messageType = "speech"; 
+        msg.playerActionType = "speech";
+        msg.speech = "text";
+        msg.assistantContext = ac;
+        msg.playerContext = pc;
+        msg.eventContext = new EventContext();
+
+        if (PlayerInConversation && PlayerGaze.Valid)
+        {
+            msg.assistantContext.focusedAsset = PlayerGaze.ObjectOfInterest.name;
+        }
+
+        msg.assistantContext.availableActions = new string[] { "testAction" };
+        _websocket.SendText(JsonUtility.ToJson(msg));
+    }
+
     public void SendPlayerSpeech(string text)
     {
         var ac = InquireAssistantContext(true,false);
@@ -189,8 +220,8 @@ public class Brain : MonoBehaviour
         print(ac.ToString());
         print(pc.ToString());
         LlamaWebsockRequest msg = new LlamaWebsockRequest();
-        msg.messageType = "speech"; // "speech" "assistantUpdate" "playerAction" "suggestAction"
-        msg.playerActionType = "speech"; // "speech", "enteringVision", "leavingVision", "vandalism"
+        msg.messageType = "speech"; 
+        msg.playerActionType = "speech";
         msg.speech = text;
         msg.assistantContext = ac;
         msg.playerContext = pc;
@@ -275,7 +306,7 @@ public class Brain : MonoBehaviour
         _websocket.SendText(JsonUtility.ToJson(msg));
     }
 
-    public void SendInnerThoughtEvent()
+    public void  SendInnerThoughtEvent()
     {
         var ac = InquireAssistantContext(false, true);
         var pc = InquirePlayerContext();
@@ -290,7 +321,7 @@ public class Brain : MonoBehaviour
         msg.speech = "speech";
         msg.assistantContext = ac;
         msg.playerContext = pc;
-        _websocket.SendText(JsonUtility.ToJson(msg));
+        //_websocket.SendText(JsonUtility.ToJson(msg));
     }
 
 
@@ -300,7 +331,7 @@ public class Brain : MonoBehaviour
         switch (msg.actionName)
         {
             case "followVisitor":
-                SendHistoryUpdate("NARRATOR: " + "The Assistant started following the visitor.\n");
+                SendHistoryUpdate("NARRATOR: " + "The Assistant started following the visitor.");
                 movementController.FollowVisitor(); 
                 break;
             case "provideArtInformation":
@@ -327,8 +358,8 @@ public class Brain : MonoBehaviour
                         break;
                     case 2:
                         
-                        SendHistoryUpdate("NARRATOR: " + "The assistant begins admiring " + msg.text + "\n");
-                        movementController.WalkToLocation(msg.text, 0); // Walk to location, then idle
+                        SendHistoryUpdate("NARRATOR: " + "The assistant begins admiring " + msg.text );
+                        movementController.WalkToLocation(msg.text); // Walk to location, then idle
                         bored = rnd.Next(10, 20);
                         break;
                 }
@@ -356,17 +387,18 @@ public class Brain : MonoBehaviour
                         break;
                     case 2:
                         print("Case 2"); //
-                        var targetobj = repairQueue.Dequeue(); // We do get the object as an answer, but this is less performance intensive.
+                        var targetobj = repairQueue.Dequeue(); 
                         movementController.Walk(targetobj);
                         repairAvailable = false;
-                        SendActionUpdate(msg.token, msg.actionName, msg.stage +1, true, "", "", new  string[]{"followVisitor"} );
+                        SendActionUpdate(msg.token, msg.actionName, msg.stage +1, true, "", "", new  string[]{"walkToVisitor"} );
                         break;
                     case 3:
                         print("Case 3");
+                        
                         break;
                     case 4:    
                         print("Case 4");
-                        SendActionUpdate(msg.token, msg.actionName, msg.stage +1, true, "", "", new  string[]{"stopFollowingVisitor"} );
+                        SendActionUpdate(msg.token, msg.actionName, msg.stage +1, true, "", "", new  string[]{"standIdle"} );
                         break;
                     case 5:
                         actionDict.Remove(msg.token);
@@ -400,9 +432,10 @@ public class Brain : MonoBehaviour
                         print("Made Decision to investigate");
                         break;
                     case 2:
-                        SendHistoryUpdate("NARRATOR: " + "The Assistant walked to " + msg.text + "and started investigating.\n");
-                        movementController.WalkToLocation(msg.text, 1); // Walk to location, then patrol
-                        bored = rnd.Next(10, 20);
+                        SendHistoryUpdate("NARRATOR: " + "The Assistant walked to " + msg.text + "and started investigating.");
+                        movementController.WalkToLocation(msg.text); // Walk to location, then patrol
+                        
+                        bored = rnd.Next(5, 10);
                         break; 
                 }
 
@@ -414,7 +447,7 @@ public class Brain : MonoBehaviour
             case "stopMusic":
                 if (musicManager.isPlaying)
                 {
-                    SendHistoryUpdate("NARRATOR: " + "The Music stopped. \n");
+                    SendHistoryUpdate("NARRATOR: " + "The Music stopped.");
                     musicManager.StopPlay();
                 }
 
@@ -450,8 +483,13 @@ public class Brain : MonoBehaviour
 
         var context = new AssistantContext
         {
-            location = movementController.location, playerVisible = PlayerVisible, playerAudible = PlayerAudible,
-            assetsInView = AssetsInView, availableActions = opts,walkingState = walkingstate, focusedAsset = "",
+            location = movementController.location,
+            playerVisible = PlayerVisible,
+            playerAudible = PlayerAudible,
+            assetsInView = AssetsInView, 
+            availableActions = opts,
+            walkingState = walkingstate, 
+            focusedAsset = "",
             selectedBasePrompt = "museumAssistant"
         };
         
@@ -498,7 +536,6 @@ public class Brain : MonoBehaviour
             }
             return list.ToArray();
         }
-        
         if (movementController.movementState == 2)
         {
             list.Add("stopFollowingVisitor");
@@ -507,11 +544,10 @@ public class Brain : MonoBehaviour
         {
             list.Add("followVisitor");
         }
-
         if (speech && !PlayerInConversation)
         {
-            list.Add("explainWhatYouCanDo");
-            list.Add("continueConversation");
+            list.Add("explainOptions");
+            //list.Add("continueConversation");
             list.Add("walkToObject");
             list.Add("walkToVisitor");
             if (musicManager.isPlaying)
@@ -524,7 +560,7 @@ public class Brain : MonoBehaviour
             }
         } else if (speech && PlayerInConversation)
         {
-            list.Add("explainWhatYouCanDo");
+            list.Add("explainOptions");
             list.Add("continueConversation");
             list.Add("provideArtInformation");
             list.Add("walkToObject");
@@ -537,7 +573,6 @@ public class Brain : MonoBehaviour
                 list.Add("playMusic");
             }
         }
-       
         return list.ToArray();
     }
 
@@ -547,16 +582,16 @@ public class Brain : MonoBehaviour
         if (!PlayerVisible && !PlayerAudible)
         {
             ctx.location = "unknown";
-            ctx.assetsInView = new[] { "" };
+            ctx.assetsInView = PlayerAssetsInView;
             ctx.inConversation = PlayerInConversation;
-            ctx.playerUsername = "Sir Grandmasterr";
+            ctx.playerUsername = PlayerPrefs.GetString("username");
             return ctx;
         }
 
         ctx.location = "unknown";
-        ctx.assetsInView = new[] { " " };
+        ctx.assetsInView = PlayerAssetsInView;
         ctx.inConversation = PlayerInConversation;
-        ctx.playerUsername = "Sir Grandmasterr";
+        ctx.playerUsername = PlayerPrefs.GetString("username");
         return ctx;
     }
 
@@ -570,13 +605,19 @@ public class Brain : MonoBehaviour
     public void UpdateVisibleAssets(string[] objs)
     {
         AssetsInView = objs;
-        if (repairQueue.Count > 0 && movementController.movementState == 2)
+        if (repairQueue.Count > 0 && !(movementController.movementState == 2))
         {
+            Debug.Log("looking for " + repairQueue.Peek().name);
             if (AssetsInView.Contains(repairQueue.Peek().name))
             {
+                
                 repairAvailable = true;
             }
         }
+    }
+    public void UpdateVisiblePlayerAssets(string[] objs)
+    { 
+        PlayerAssetsInView = objs;
     }
 
     public void UpdateConversationStatus(bool update)
@@ -585,12 +626,12 @@ public class Brain : MonoBehaviour
         PlayerInConversation = update;
         if (update)
         {
-            SendHistoryUpdate("NARRATOR: " + "The visitor entered a conversation with the Assistant.\n");
+            SendHistoryUpdate("NARRATOR: " + "The visitor entered a conversation with the Assistant.");
             movementController.EnableConversationBodyLanguage();
         }
         else
         {
-            SendHistoryUpdate("NARRATOR: " + "The conversation stopped.\n");
+            SendHistoryUpdate("NARRATOR: " + "The conversation stopped.");
             movementController.DisableConversationBodyLanguage();
         }
 
@@ -634,7 +675,7 @@ public class Brain : MonoBehaviour
         print(feedback.token);
         if (feedback.found)
         {
-            SendHistoryUpdate("NARRATOR: " + feedback.query + "music starts playing.\n" );
+            SendHistoryUpdate("NARRATOR: " + feedback.query + "music starts playing." );
             SendActionUpdate(feedback.token, "playMusic", 3, false, "", null, new  string[]{} );
             actionDict.Remove(feedback.token);
             return;

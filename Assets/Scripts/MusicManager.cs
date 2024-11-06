@@ -22,9 +22,6 @@ public class MusicAction : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown("q"))
-        {
-        }
 
         if (Input.GetKeyDown("y"))
         {

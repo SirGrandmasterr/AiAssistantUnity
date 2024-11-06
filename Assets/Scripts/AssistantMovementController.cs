@@ -24,9 +24,8 @@ public class AssistantMovementController : MonoBehaviour
 
 
     private Queue<MovementQueueStruct> _movementqueue;
+    private bool _queuelock;
     public int movementState = 0;
-    public int nextMovementState = 1;
-    private GameObject picture;
     public Transform player;
 
     private GazeObject playerGaze;
@@ -34,6 +33,7 @@ public class AssistantMovementController : MonoBehaviour
 
     private void Awake()
     {
+        _queuelock = false;
         _movementqueue = new Queue<MovementQueueStruct>();
         _heightOffset = new Vector3(0f, 1.7f, 0);
         var transforms = GetComponentsInChildren<Transform>();
@@ -45,7 +45,7 @@ public class AssistantMovementController : MonoBehaviour
             head = t;
         }
 
-        picture = GameObject.Find("Floor_Display_Case 1 (1)");
+        
         agent.speed = 0.8f;
         agent.angularSpeed = 180f;
         centrePoint = agent.transform;
@@ -103,7 +103,7 @@ public class AssistantMovementController : MonoBehaviour
                 else
                 {
                     agent.speed = 4.5f;
-                    animator.Run(); //TODO
+                    animator.Run(); 
                 }
 
                 if (agent.remainingDistance <= agent.stoppingDistance)
@@ -131,6 +131,8 @@ public class AssistantMovementController : MonoBehaviour
                     if (_movementqueue.Count > 0)
                     {
                         var next = _movementqueue.Dequeue();
+                        if (_movementqueue.Count == 0)
+                            _queuelock = false;
                         if (next.State == 3)
                         {
                             print("Setting Destination to "+ next.Obj.name);
@@ -141,7 +143,7 @@ public class AssistantMovementController : MonoBehaviour
                             movementState = next.State;
                         }
                     }
-                    
+                        
                 }
                 break;
         }
@@ -177,25 +179,26 @@ public class AssistantMovementController : MonoBehaviour
 
                 break;
         }
-    }
-    
-    private bool IsInside ( Collider c , Vector3 point )
-    {
-        Vector3 closest = c.ClosestPoint(point);
-        // Because closest=point if point is inside - not clear from docs I feel
-        return closest == point;
-    }
 
+        if (agent.speed == 0)
+        {
+            animator.Idle();
+        } else if (agent.speed > 0 && agent.speed < 4)
+        {
+            animator.Walk();
+        } else if (agent.speed >= 4)
+        {
+            animator.Run();
+        }
+    }
 
     private bool RandomPoint(Vector3 center, float range, out Vector3 result)
     {
-        var randomPoint = center + Random.insideUnitSphere * range; //random point in a sphere 
+        var randomPoint = center + Random.insideUnitSphere * range; 
         NavMeshHit hit;
         if (NavMesh.SamplePosition(randomPoint, out hit, this.range,
-                NavMesh.AllAreas)) //documentation: https://docs.unity3d.com/ScriptReference/AI.NavMesh.SamplePosition.html
+                NavMesh.AllAreas))
         {
-            //the 1.0f is the max distance from the random point to a point on the navmesh, might want to increase if range is big
-            //or add a for loop like in the documentation
             result = hit.position;
             return true;
         }
@@ -224,7 +227,6 @@ public class AssistantMovementController : MonoBehaviour
 
     public void DisableConversationBodyLanguage()
     {
-        //transform.position = _prevPos;
         switch (_prevState)
         {
             case 0:
@@ -257,22 +259,24 @@ public class AssistantMovementController : MonoBehaviour
     }
     public void Idle()
     {
-        if (movementState == 3)
+        if (movementState == 3 && !_queuelock)
         {
             var mvmt = new MovementQueueStruct();
             mvmt.State = 0;
             _movementqueue.Enqueue(mvmt);
+            _queuelock = true;
             return;
         }
         movementState = 0;
     }
     public void Patrol()
     {
-        if (movementState == 3)
+        if (movementState == 3 && !_queuelock)
         {
             var mvmt = new MovementQueueStruct();
             mvmt.State = 1;
             _movementqueue.Enqueue(mvmt);
+            _queuelock = true;
             return;
         }
         movementState = 1;
@@ -280,11 +284,12 @@ public class AssistantMovementController : MonoBehaviour
 
     public void FollowVisitor()
     {
-        if (movementState == 3)
+        if (movementState == 3 && !_queuelock)
         {
             var mvmt = new MovementQueueStruct();
             mvmt.State = 2;
             _movementqueue.Enqueue(mvmt);
+            _queuelock = true;
             return;
         }
         movementState = 2;
@@ -292,7 +297,7 @@ public class AssistantMovementController : MonoBehaviour
 
     public void Walk(GameObject destination)
     {
-        if (movementState == 3)
+        if (movementState == 3 && !_queuelock)
         {
             var mvmt = new MovementQueueStruct();
             mvmt.State = 3;
@@ -315,7 +320,7 @@ public class AssistantMovementController : MonoBehaviour
         if (movementState == 3)
         {
             var mvmt = new MovementQueueStruct();
-            mvmt.State = 2;
+            mvmt.State = 3;
             mvmt.Obj = player.GameObject();
             _movementqueue.Enqueue(mvmt);
             return;
@@ -324,7 +329,7 @@ public class AssistantMovementController : MonoBehaviour
         movementState = 3;
     }
 
-    public void WalkToLocation(string sublocationName, int followupMovement)
+    public void WalkToLocation(string sublocationName)
     {
         var locationsObj = GameObject.Find("Sublocations");
         var found = false;

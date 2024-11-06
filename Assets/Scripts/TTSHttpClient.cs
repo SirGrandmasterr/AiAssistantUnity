@@ -50,6 +50,7 @@ public class SoundGetter : MonoBehaviour
 
             var clip = ((DownloadHandlerAudioClip)webRequest.downloadHandler).audioClip;
             source.clip = clip;
+            print("clip length: " + clip.length);
             source.Play();
             while (source.isPlaying) yield return null;
             Debug.Log("Finished Coroutine");            

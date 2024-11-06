@@ -17,20 +17,41 @@ public class AssistantAnimationStateController : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
+        if (Input.GetKeyDown("1"))
+        {
+            print("Pressed 1");
+            Idle();
+        }
+        if (Input.GetKeyDown("2"))
+        {
+            print("Pressed 2");
+            Walk();
+        }
+        if (Input.GetKeyDown("1"))
+        {
+            print("Pressed 3");
+            Run();
+        }
     }
     public void Idle()
     {
-        animator.SetInteger(IdleWalkRun, 0);   
+        animator.ResetTrigger("WalkTrigger");
+        animator.ResetTrigger("RunTrigger");
+        animator.SetTrigger("IdleTrigger");
+         
     }
     public void Walk()
-    {
-        animator.SetInteger(IdleWalkRun, 1);
+    {   animator.ResetTrigger("IdleTrigger");
+        animator.ResetTrigger("RunTrigger");
+        animator.SetTrigger("WalkTrigger");
     }
 
    
     public void Run()
     {
-        animator.SetInteger(IdleWalkRun, 2);
+        animator.ResetTrigger("WalkTrigger");
+        animator.ResetTrigger("IdleTrigger");
+        animator.SetTrigger("RunTrigger");
     }
     
 }

@@ -119,6 +119,7 @@ public class Eyes : MonoBehaviour
             //Update Asset Array not every frame, but every 0.2 seconds. 
             yield return new WaitForSeconds(0.2f);
             brain.UpdateVisibleAssets(CheckVisibleObjectsOfInterest());
+            brain.UpdateVisiblePlayerAssets(CheckPlayerVisibleObjectsOfInterest());
         }
     }
 
@@ -148,11 +149,23 @@ public class Eyes : MonoBehaviour
 
         return assetsInView.ToArray();
     }
-
-    private void OnDrawGizmos()
+    
+    private String[] CheckPlayerVisibleObjectsOfInterest()
     {
-        //Gizmos.color = Color.yellow;
-        //Gizmos.DrawSphere(debug_hit, 0.5f);
+        if (!brain.PlayerVisible)
+        {
+            return new string[] { };
+        }
+        var assetsInView = new List<string>();
+        Collider[] hitColliders = Physics.OverlapSphere(player.transform.position+_heightOffset, 8f, artlayer);
+        //print("Checking.");
+        foreach (var hitCollider in hitColliders)
+        {
+            //print(hitCollider.transform.parent.name);
+            assetsInView.Add(hitCollider.transform.parent.name);
+        }
+
+        return assetsInView.ToArray();
     }
 
     private GazeObject CheckPlayerGaze()

@@ -143,7 +143,7 @@ if __name__ == '__main__':
     global engine
     
     if coqui:
-        engine = CoquiEngine()
+        engine = CoquiEngine(use_deepspeed=True,speed=1.3)
     else:
         engine = SystemEngine()
     
