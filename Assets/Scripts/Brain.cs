@@ -13,7 +13,8 @@ using Random = System.Random;
 
 public class Brain : MonoBehaviour
 {
-    public WebSocketClient webSocketTtsClient;
+    //public WebSocketClient webSocketTtsClient;
+    public WebRtcProvider webRtcTts;
     public AssistantMovementController movementController;
     public MusicAction musicManager;
     private WebSocket _websocket;
@@ -144,38 +145,43 @@ public class Brain : MonoBehaviour
            
             //Decode bytes into String, assume it's JSON, Decode into Websocketmsg
             var msg = LlamaWebsockMsg.CreateFromJson(Encoding.UTF8.GetString(bytes));
-            if (msg.type == "speech")
+            switch (msg.type)
             {
-                if (!isSpeaking)
+                case "speech":
                 {
-                    //print(sw.ElapsedMilliseconds + "history tokens: " + tk);
-                    SendHistoryUpdate("ASSISTANT: '" + msg.text);
-                    isSpeaking = true;
+                    if (!isSpeaking)
+                    {
+                        //print(sw.ElapsedMilliseconds + "history tokens: " + tk);
+                        SendHistoryUpdate("ASSISTANT: '" + msg.text);
+                        isSpeaking = true;
+                    }
+                    else if (msg.actionName == "stopSpeak")
+                    {
+                        SendHistoryUpdate(msg.text + "'");
+                        isSpeaking = false; //remove
+                    }
+                    else
+                    {
+                        SendHistoryUpdate(msg.text);
+                    }
+                    //Task task = webSocketTtsClient.ListenTo(msg.text);
+                    Task task = webRtcTts.ListenTo(msg.text);
+                    return;
                 }
-                else if (msg.actionName == "stopSpeak")
+                case "actionSelection":
                 {
-                    SendHistoryUpdate(msg.text + "'");
-                    isSpeaking = false; //remove
+                    var secondary = msg.text;
+                    var original = msg.actionName;
+                    msg.actionName = secondary;
+                    EvaluateAction(msg);
+                    msg.actionName = original;
+                    EvaluateAction(msg);
+                    return;
                 }
-                else
-                {
-                    SendHistoryUpdate(msg.text);
-                }
-                Task task = webSocketTtsClient.ListenTo(msg.text);
-                return;
+                default:
+                    EvaluateAction(msg);
+                    break;
             }
-            if (msg.type == "actionSelection")
-            {   
-                var secondary = msg.text;
-                var original = msg.actionName;
-                msg.actionName = secondary;
-                EvaluateAction(msg);
-                msg.actionName = original;
-                EvaluateAction(msg);
-                return;
-            }
-            
-            EvaluateAction(msg);
         };
 
         // waiting for messages
@@ -560,10 +566,10 @@ public class Brain : MonoBehaviour
             }
         } else if (speech && PlayerInConversation)
         {
-            list.Add("explainOptions");
+            //list.Add("explainOptions");
             list.Add("continueConversation");
-            list.Add("provideArtInformation");
-            list.Add("walkToObject");
+            //list.Add("provideArtInformation");
+            //list.Add("walkToObject");
             if (musicManager.isPlaying)
             {
                 list.Add("stopMusic");
