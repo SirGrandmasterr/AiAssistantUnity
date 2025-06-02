@@ -23,6 +23,7 @@ public class Brain : MonoBehaviour
     private Queue<GameObject> repairQueue;
     public bool repairAvailable;
     public bool isSpeaking;
+    public EmotionMeter emotionMeter;
     private Stopwatch sw;
     private int tk;
     
@@ -48,6 +49,8 @@ public class Brain : MonoBehaviour
 
         [FormerlySerializedAs("SelectedBasePrompt")]
         public string selectedBasePrompt;
+
+        public List<EmotionMeter.EmotionEntry> emotionalState;
     }
 
     [Serializable]
@@ -111,7 +114,7 @@ public class Brain : MonoBehaviour
 
     // Start is called before the first frame update
     private async void Start()
-    {
+    {   
         tk = 0;
         sw = new Stopwatch();
         isSpeaking = false;
@@ -487,6 +490,7 @@ public class Brain : MonoBehaviour
                 break;
         }
 
+        var emotionalState = emotionMeter.GetAllEmotionsAsSerializableList();
         var context = new AssistantContext
         {
             location = movementController.location,
@@ -496,7 +500,8 @@ public class Brain : MonoBehaviour
             availableActions = opts,
             walkingState = walkingstate, 
             focusedAsset = "",
-            selectedBasePrompt = "museumAssistant"
+            selectedBasePrompt = "museumAssistant",
+            emotionalState = emotionalState
         };
         
         
