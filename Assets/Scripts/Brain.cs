@@ -50,7 +50,7 @@ public class Brain : MonoBehaviour
         [FormerlySerializedAs("SelectedBasePrompt")]
         public string selectedBasePrompt;
 
-        public List<EmotionMeter.EmotionEntry> emotionalState;
+        public EmotionalState emotionalState;
     }
 
     [Serializable]
@@ -168,7 +168,7 @@ public class Brain : MonoBehaviour
                         SendHistoryUpdate(msg.text);
                     }
                     //Task task = webSocketTtsClient.ListenTo(msg.text);
-                    Task task = webRtcTts.ListenTo(msg.text);
+                    Task task = webRtcTts.SendTextMessageForTTS(msg.text);
                     return;
                 }
                 case "actionSelection":
@@ -490,7 +490,7 @@ public class Brain : MonoBehaviour
                 break;
         }
 
-        var emotionalState = emotionMeter.GetAllEmotionsAsSerializableList();
+        var emotionalState = emotionMeter.GetEmotionalState();
         var context = new AssistantContext
         {
             location = movementController.location,
@@ -557,31 +557,31 @@ public class Brain : MonoBehaviour
         }
         if (speech && !PlayerInConversation)
         {
-            list.Add("explainOptions");
-            //list.Add("continueConversation");
+            //list.Add("explainOptions");
+            list.Add("emotionalConversation");
             list.Add("walkToObject");
             list.Add("walkToVisitor");
             if (musicManager.isPlaying)
             {
-                list.Add("stopMusic");
+                //list.Add("stopMusic");
             }
             else
             {
-                list.Add("playMusic");
+                //list.Add("playMusic");
             }
         } else if (speech && PlayerInConversation)
         {
             //list.Add("explainOptions");
-            list.Add("continueConversation");
+            list.Add("emotionalConversation");
             //list.Add("provideArtInformation");
             //list.Add("walkToObject");
             if (musicManager.isPlaying)
             {
-                list.Add("stopMusic");
+                //list.Add("stopMusic");
             }
             else
             {
-                list.Add("playMusic");
+                //list.Add("playMusic");
             }
         }
         return list.ToArray();
