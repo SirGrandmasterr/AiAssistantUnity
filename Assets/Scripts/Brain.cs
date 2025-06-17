@@ -559,8 +559,8 @@ public class Brain : MonoBehaviour
         {
             //list.Add("explainOptions");
             list.Add("emotionalConversation");
-            list.Add("walkToObject");
-            list.Add("walkToVisitor");
+            //list.Add("walkToObject");
+            //list.Add("walkToVisitor");
             if (musicManager.isPlaying)
             {
                 //list.Add("stopMusic");

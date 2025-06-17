@@ -34,6 +34,7 @@ public class EmotionMeter : MonoBehaviour
     // The current emotional state of the avatar. It's private to ensure
     // that it's only modified through the provided public methods.
     private EmotionalState currentState;
+    private string scenario;
 
     /// <summary>
     /// Awake is called when the script instance is being loaded.
@@ -41,7 +42,17 @@ public class EmotionMeter : MonoBehaviour
     /// </summary>
     void Awake()
     {
+        if (PlayerPrefs.HasKey("Scenario"))
+        {
+            scenario = PlayerPrefs.GetString("Scenario");
+        }
+        else
+        {
+            PlayerPrefs.SetString("Scenario", "scenario1");
+        }
         InitializeDefaultState();
+        
+        
     }
 
     /// <summary>
@@ -50,32 +61,76 @@ public class EmotionMeter : MonoBehaviour
     /// </summary>
     public void InitializeDefaultState()
     {
-        currentState = new EmotionalState
+        if (scenario == "scenario1")
         {
-            Emotions = new Dictionary<string, int>
+            currentState = new EmotionalState
             {
-                { "Joy", 50 },
-                { "Trust", 60 },
-                { "Fear", 10 },
-                { "Surprise", 0 },
-                { "Sadness", 0 },
-                { "Disgust", 0 },
-                { "Anger", 0 },
-                { "Anticipation", 30 }
-            },
-            Triggers = new List<EmotionalTrigger>
-            {
-                new EmotionalTrigger
+                Emotions = new Dictionary<string, int>
                 {
-                    Id = 1,
-                    Description = "Want to get to know the visitor",
-                    TargetEmotion = "Anticipation",
-                    Intensity = 30
+                    { "Joy", 15 },
+                    { "Trust", 50 },
+                    { "Fear", 0 },
+                    { "Surprise", 50 },
+                    { "Sadness", 5 },
+                    { "Disgust", 15 },
+                    { "Anger", 80 },
+                    { "Anticipation", 20 }
+                },
+                Triggers = new List<EmotionalTrigger>
+                {
+                    new EmotionalTrigger
+                    {
+                        Id = 1,
+                        Description = "Markus did not clean the ammunition storage as instructed.",
+                        TargetEmotion = "Anger",
+                        Intensity = 80
+                    },
+                    new EmotionalTrigger
+                    {
+                        Id = 2,
+                        Description = "The ammunition storage appears to be in disarray.",
+                        TargetEmotion = "Surprise",
+                        Intensity = 50
+                    }
                 }
-            }
-        };
+            };
+            
+        }else 
+        {
+            currentState = new EmotionalState
+            {
+                Emotions = new Dictionary<string, int>
+                {
+                    { "Joy", 80 },
+                    { "Trust", 70 },
+                    { "Fear", 0 },
+                    { "Surprise", 90 },
+                    { "Sadness", 0 },
+                    { "Disgust", 0 },
+                    { "Anger", 0 },
+                    { "Anticipation", 50 }
+                },
+                Triggers = new List<EmotionalTrigger>
+                {
+                    new EmotionalTrigger
+                    {
+                        Id = 1,
+                        Description = "Informed of an upcoming promotion",
+                        TargetEmotion = "Joy",
+                        Intensity = 80
+                    },
+                    new EmotionalTrigger
+                    {
+                        Id = 1,
+                        Description = "Upcoming promotion is welcome, but unexpected",
+                        TargetEmotion = "Surprise",
+                        Intensity = 90
+                    },
+                }
+            };
+        }
 
-        Debug.Log("EmotionMeter initialized with default state.");
+        Debug.Log("EmotionMeter initialized with "+scenario + " state.");
     }
 
     /// <summary>

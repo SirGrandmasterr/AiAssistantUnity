@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 using Whisper.Utils;
+using Debug = UnityEngine.Debug;
 
 namespace Whisper.Ears
 {
@@ -23,6 +24,8 @@ namespace Whisper.Ears
         public Text outputText;
         public Text timeText;
         private Vector3 _heightOffset;
+        public SceneTimeManager timeManager;
+        private Stopwatch recordingStopwatch;
 
         public Brain brain;
 
@@ -34,6 +37,7 @@ namespace Whisper.Ears
             _heightOffset = new Vector3(0f, 1.7f, 0);
             whisper.OnNewSegment += OnNewSegment;
             whisper.OnProgress += OnProgressHandler;
+            recordingStopwatch = new Stopwatch();
 
             microphoneRecord.OnRecordStop += OnRecordStop;
             StartCoroutine(UpdatePlayerAudible());
@@ -109,9 +113,27 @@ namespace Whisper.Ears
         private void OnButtonPressed()
         {
             if (!microphoneRecord.IsRecording)
+            {
                 microphoneRecord.StartRecord();
+                recordingStopwatch.Start();
+            }
             else
+            {
                 microphoneRecord.StopRecord();
+                Debug.Log(recordingStopwatch.ElapsedMilliseconds);
+                if (recordingStopwatch.ElapsedMilliseconds < 500)
+                {
+                    recordingStopwatch.Stop();
+                    recordingStopwatch.Reset();
+                }
+                else
+                {
+                    Debug.Log("Recording Action");
+                    timeManager.RecordAction();
+                    recordingStopwatch.Stop();
+                    recordingStopwatch.Reset();
+                }
+            }
         }
         
         public async void ButtonPressedTest()

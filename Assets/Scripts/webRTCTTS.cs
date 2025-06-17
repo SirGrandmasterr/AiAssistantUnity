@@ -13,6 +13,11 @@ using Unity.WebRTC;   // Requires Unity WebRTC package
 
 public class WebRtcProvider : MonoBehaviour
 {
+    
+    public static WebRtcProvider Instance { get; private set; }
+
+    public string connectionState = "";
+    
     private WebSocket ws;
     private RTCPeerConnection _peerConnection;
     private MediaStream _receiveStream;
@@ -22,15 +27,33 @@ public class WebRtcProvider : MonoBehaviour
     // To store the ID of the provider we are connected to.
     private string _providerId;
 
-    [SerializeField] private AudioSource outputAudioSource;
+    private AudioSource outputAudioSource;
+
+    private void Awake()
+    {
+        // --- Singleton Implementation ---
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // Persist this GameObject across scene loads
+            Debug.Log("WebRtcProvider instance created and set to not destroy on load.");
+        }
+        else
+        {
+            // If an instance already exists, destroy this new one.
+            Destroy(gameObject);
+            return;
+        }
+        // ---
+    }
 
     void Start()
     {
-        if (outputAudioSource == null)
-        {
-            Debug.LogError("Output AudioSource is not assigned in the Inspector!");
-            outputAudioSource = gameObject.AddComponent<AudioSource>();
-        }
+        // if (outputAudioSource == null)
+        // {
+        //     Debug.LogError("Output AudioSource is not assigned in the Inspector!");
+        //     outputAudioSource = gameObject.AddComponent<AudioSource>();
+        // }
 
         StartCoroutine(WebRTC.Update());
 
@@ -82,6 +105,24 @@ public class WebRtcProvider : MonoBehaviour
         }
     }
 
+    public string GetConnectionState()
+    {
+        return connectionState;
+    }
+    
+    public void SetAudioSource(AudioSource source)
+    {
+        if (source != null)
+        {
+            outputAudioSource = source;
+            Debug.Log("AudioSource has been successfully assigned to the WebRtcProvider.");
+        }
+        else
+        {
+            Debug.LogError("Attempted to assign a null AudioSource.");
+        }
+    }
+
     private void SetupPeerConnection()
     {
         var configuration = GetSelectedSdpSemantics();
@@ -115,6 +156,7 @@ public class WebRtcProvider : MonoBehaviour
         _peerConnection.OnConnectionStateChange += state =>
         {
             Debug.Log($"Peer Connection State Changed: {state}");
+            connectionState = state.ToString();
             if (state == RTCPeerConnectionState.Failed || state == RTCPeerConnectionState.Closed || state == RTCPeerConnectionState.Disconnected)
             {
                 Debug.LogWarning("Peer connection lost. Consider cleaning up and resetting.");
@@ -254,11 +296,18 @@ public class WebRtcProvider : MonoBehaviour
     {
         if (e.Track is AudioStreamTrack audioTrack)
         {
-            Debug.Log("Audio track received. Setting to AudioSource.");
-            outputAudioSource.SetTrack(audioTrack);
-            outputAudioSource.loop = false; // TTS audio should not loop
-            outputAudioSource.Play();
-            Debug.Log("AudioSource started playing received track.");
+            if (outputAudioSource != null)
+            {
+                Debug.Log("Audio track received. Setting to AudioSource.");
+                outputAudioSource.SetTrack(audioTrack);
+                outputAudioSource.loop = false; // TTS audio should not loop
+                outputAudioSource.Play();
+                Debug.Log("AudioSource started playing received track.");
+            }
+            else
+            {
+                Debug.LogWarning("Received an audio track, but the AudioSource is not yet assigned!");
+            }
         }
     }
     

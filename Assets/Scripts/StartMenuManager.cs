@@ -42,7 +42,7 @@ public class StartMenuScript : MonoBehaviour
     void Start()
     {
         infotext.text =
-            "1. Enter hostname:port and confirm.\n2. Enter username/password and confirm. Account will be created if not exists.\n3. Click Enter 3D-Environment";
+            "1. Enter hostname:port and confirm.\n2. Enter username/password and confirm. Account will be created if it doesn't exist.\n3. Click Enter 3D-Environment";
         if (PlayerPrefs.HasKey("Address"))
         {
             Address.text = PlayerPrefs.GetString("Address");
@@ -79,7 +79,7 @@ public class StartMenuScript : MonoBehaviour
 
     void OnStartEnvironmentButtonPress()
     {
-        SceneManager.LoadScene("Gallery");
+        SceneManager.LoadScene("ScenarioSelect");
     }
     
     IEnumerator TestConnection(string uri)
