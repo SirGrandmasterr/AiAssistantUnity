@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEngine;
 using WebSocketSharp; // Ensure you have this library
@@ -23,6 +24,7 @@ public class WebRtcProvider : MonoBehaviour
     private MediaStream _receiveStream;
     private readonly Queue<string> _messageQueue = new Queue<string>();
     private bool _processingMessage = false;
+    private AudioStreamTrack _audioTrack;
 
     // To store the ID of the provider we are connected to.
     private string _providerId;
@@ -115,6 +117,12 @@ public class WebRtcProvider : MonoBehaviour
         if (source != null)
         {
             outputAudioSource = source;
+            if (_audioTrack != null)
+            {
+                outputAudioSource.SetTrack(_audioTrack);
+                outputAudioSource.loop = false; // TTS audio should not loop
+                outputAudioSource.Play();
+            }
             Debug.Log("AudioSource has been successfully assigned to the WebRtcProvider.");
         }
         else
@@ -296,6 +304,7 @@ public class WebRtcProvider : MonoBehaviour
     {
         if (e.Track is AudioStreamTrack audioTrack)
         {
+            _audioTrack = audioTrack;
             if (outputAudioSource != null)
             {
                 Debug.Log("Audio track received. Setting to AudioSource.");
@@ -313,6 +322,7 @@ public class WebRtcProvider : MonoBehaviour
     
     public Task SendTextMessageForTTS(string text, string voice = "dan")
     {
+        text = RemoveTextInAsterisks(text);
         if (ws != null && ws.IsAlive)
         {
             var textMsg = new TextMessage { text = text, voice = voice };
@@ -324,6 +334,20 @@ public class WebRtcProvider : MonoBehaviour
             Debug.LogWarning("Cannot send text message, WebSocket is not connected.");
         }
         return Task.CompletedTask;
+    }
+    
+    public static string RemoveTextInAsterisks(string inputText)
+    {
+        if (string.IsNullOrEmpty(inputText))
+        {
+            return inputText;
+        }
+
+        // The regular expression `\*.*?\*` matches:
+        // \* - a literal asterisk (escaped because * is a special regex character)
+        // .*?   - any character (.), zero or more times (*), non-greedily (?)
+        // \* - a literal asterisk
+        return Regex.Replace(inputText, @"\*.*?\*", string.Empty);
     }
 
     void OnDestroy()

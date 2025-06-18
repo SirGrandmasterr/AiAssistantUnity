@@ -30,6 +30,7 @@ public class StartMenuScript : MonoBehaviour
 
     public UnityEngine.UI.Image ConnImage;
     public UnityEngine.UI.Image LogImage;
+    public WebRtcProvider webRtcProvider;
     [Serializable]
     public struct JWTResponse
     {
@@ -79,7 +80,10 @@ public class StartMenuScript : MonoBehaviour
 
     void OnStartEnvironmentButtonPress()
     {
-        SceneManager.LoadScene("ScenarioSelect");
+        if (webRtcProvider.GetConnectionState() == "Connected")
+        {
+            SceneManager.LoadScene("ScenarioSelect");
+        }
     }
     
     IEnumerator TestConnection(string uri)

@@ -17,7 +17,7 @@ public class EvaluationManager : MonoBehaviour
     public Color wrongButtonColor = new Color(1f, 0.35f, 0.4f, 1f);
     
    
-    private string correctScenarioKey = "scenario"; // The PlayerPrefs key to check.
+    private string correctScenarioKey = "scenarioInt"; // The PlayerPrefs key to check.
     public bool isButtonSelected = false; // Prevents further interaction after a choice is made.
 
 

@@ -128,6 +128,7 @@ public class Brain : MonoBehaviour
         url = "ws://" + url + "/ws/" + PlayerPrefs.GetString("playerJwt");
         Debug.Log(url);
         _websocket = new WebSocket(url);
+        webRtcTts = WebRtcProvider.Instance;
 
         _websocket.OnOpen += () =>
         {
@@ -219,7 +220,7 @@ public class Brain : MonoBehaviour
         }
 
         msg.assistantContext.availableActions = new string[] { "testAction" };
-        _websocket.SendText(JsonUtility.ToJson(msg));
+        _websocket.SendText(Newtonsoft.Json.JsonConvert.SerializeObject(msg));
     }
 
     public void SendPlayerSpeech(string text)
@@ -242,7 +243,7 @@ public class Brain : MonoBehaviour
         }
         
         print("Focused Asset: "+ msg.assistantContext.focusedAsset);
-        _websocket.SendText(JsonUtility.ToJson(msg));
+        _websocket.SendText(Newtonsoft.Json.JsonConvert.SerializeObject(msg));
     }
 
     public void SendHistoryUpdate(string text)
@@ -261,8 +262,8 @@ public class Brain : MonoBehaviour
         msg.assistantContext = ac;
         msg.playerContext = pc;
         msg.eventContext = new EventContext();
-        print(JsonUtility.ToJson(msg));
-        _websocket.SendText(JsonUtility.ToJson(msg));
+        print(Newtonsoft.Json.JsonConvert.SerializeObject(msg));
+        _websocket.SendText(Newtonsoft.Json.JsonConvert.SerializeObject(msg));
     }
 
     public void SendActionUpdate(string token, string actionName, int stage, bool permission, string speech, string focus, string[] options)
@@ -290,8 +291,8 @@ public class Brain : MonoBehaviour
             msg.assistantContext.availableActions = options;
         }
         
-        print(JsonUtility.ToJson(msg));
-        _websocket.SendText(JsonUtility.ToJson(msg));
+        print(Newtonsoft.Json.JsonConvert.SerializeObject(msg));
+        _websocket.SendText(Newtonsoft.Json.JsonConvert.SerializeObject(msg));
     }
 
     public void SendEnvEvent(string description, EventContext eventContext, string[] actionOptions)
@@ -312,7 +313,7 @@ public class Brain : MonoBehaviour
         msg.assistantContext.availableActions = actionOptions;
         msg.playerContext = pc;
         msg.eventContext = eventContext;
-        _websocket.SendText(JsonUtility.ToJson(msg));
+        _websocket.SendText(Newtonsoft.Json.JsonConvert.SerializeObject(msg));
     }
 
     public void  SendInnerThoughtEvent()
@@ -500,12 +501,16 @@ public class Brain : MonoBehaviour
             availableActions = opts,
             walkingState = walkingstate, 
             focusedAsset = "",
-            selectedBasePrompt = "museumAssistant",
+            selectedBasePrompt = GetBasePrompt(),
             emotionalState = emotionalState
         };
         
-        
         return context;
+    }
+
+    private string GetBasePrompt()
+    {
+        return PlayerPrefs.HasKey("selectedBasePrompt") ? PlayerPrefs.GetString("selectedBasePrompt") : "galleryGuideInterpreter";
     }
 
 
@@ -553,7 +558,7 @@ public class Brain : MonoBehaviour
         }
         else
         {
-            list.Add("followVisitor");
+            //list.Add("followVisitor");
         }
         if (speech && !PlayerInConversation)
         {
