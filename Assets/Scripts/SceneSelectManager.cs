@@ -96,28 +96,28 @@ public class SceneSelectManager : MonoBehaviour
         PlayerPrefs.SetString("Scenario", "scenario1");
         PlayerPrefs.SetInt("scenarioInt", 1);
         PlayerPrefs.SetString("selectedBasePrompt", "scenario1");
-        SceneManager.LoadScene("Gallery");
+        SceneManager.LoadScene("Gallery MWS_DEMO");
     }
     void SetScenario2()
     {
         PlayerPrefs.SetString("Scenario", "scenario2");
         PlayerPrefs.SetInt("scenarioInt", 2);
         PlayerPrefs.SetString("selectedBasePrompt", "scenario2");
-        SceneManager.LoadScene("Gallery");
+        SceneManager.LoadScene("Gallery MWS_DEMO");
     }
     void SetScenario3()
     {
         PlayerPrefs.SetString("Scenario", "scenario3");
         PlayerPrefs.SetInt("scenarioInt", 3);
         PlayerPrefs.SetString("selectedBasePrompt", "scenario3");
-        SceneManager.LoadScene("Gallery");
+        SceneManager.LoadScene("Gallery MWS_DEMO");
     }
     void SetScenario4()
     {
         PlayerPrefs.SetString("Scenario", "scenario4");
         PlayerPrefs.SetInt("scenarioInt", 4);
         PlayerPrefs.SetString("selectedBasePrompt", "scenario4");
-        SceneManager.LoadScene("Gallery");
+        SceneManager.LoadScene("Gallery MWS_DEMO");
     }
     
    

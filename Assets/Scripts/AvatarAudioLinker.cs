@@ -15,7 +15,7 @@ public class AvatarAudioLinker : MonoBehaviour
         {
             // Use the public method to link this avatar's AudioSource
             // to the provider.
-            rtcProvider.SetAudioSource(avatarAudioSource);
+           // rtcProvider.SetAudioSource(avatarAudioSource);
         }
         else
         {

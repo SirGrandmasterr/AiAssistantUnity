@@ -22,10 +22,10 @@ public class SceneTimeManager : MonoBehaviour
 
     [Header("Recording Action Settings")]
     [Tooltip("The maximum number of recording actions allowed.")]
-    public int maxRecordings = 5;
+    public int maxRecordings = 3;
 
     [Tooltip("How close to the end (in seconds) a recording must be to grant a grace period.")]
-    public float gracePeriodThreshold = 30f; // If last recording is within 30s of the 5-min mark
+    public float gracePeriodThreshold = 10f; // If last recording is within 30s of the 5-min mark
 
     // --- PRIVATE FIELDS ---
     private float currentTime = 0f;
