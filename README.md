@@ -79,6 +79,8 @@ OrpheusTTS handles the text-to-speech functionality for the project.
     ```
     You might encounter missing library errors. Install them as prompted until the script successfully connects to the WebRTC Signaling server you started in the previous step.
 
+6. Congrats if you made it this far, python is cancer. But we aren't done yet. There is a bug not yet fixed in RealtimeTTS library, in the sentence formatting. Navigate to Signaling\replaceInStream2sentenceLib folder,
+   read the readme there and exchange the two sentence2sentence.py files accordingly. Otherwise orpheus will just kinda of read the tags alout instead of using them as tags.
 ---
 
 ## 3. L40 Server LLM Setup
