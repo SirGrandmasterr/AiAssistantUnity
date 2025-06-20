@@ -385,7 +385,6 @@ public class uLipSync : MonoBehaviour
     private void ProcessAudio(float[] input, int channels)
     {
         if (!_allocated || !_rawInputData.IsCreated || _rawInputData.Length == 0) return;
-        Debug.Log("DID NOT RETURN");
         lock (_lockObject)
         {
             int n = _rawInputData.Length;

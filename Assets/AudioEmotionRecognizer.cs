@@ -109,24 +109,23 @@ public class EmotionResult
 }
 
 /// <summary>
-/// Analyzes a real-time audio stream from an AudioSource for emotional content
-/// and translates it into character blendshape and body animations.
+/// Analyzes a real-time audio stream injected from an external source (like WebRTC)
+/// for emotional content and translates it into character blendshape and body animations.
 /// </summary>
 public class AudioEmotionRecognizer : MonoBehaviour
 {
     [Header("Input Settings")]
-    [Tooltip("The AudioSource that provides the real-time audio stream (e.g., from WebRTC).")]
-    [SerializeField] public AudioSource streamingAudioSource;
     [Tooltip("Start analysis automatically when the scene loads.")]
     [SerializeField] private bool analyzeOnStart = true;
+    // --- REMOVED ---
+    // The AudioSource is no longer needed as audio is injected directly.
+    // [SerializeField] public AudioSource streamingAudioSource;
 
     [Header("Analysis Settings")]
-    [Tooltip("The frequency at which to sample the audio stream for analysis.")]
+    [Tooltip("The frequency at which to process the buffered audio for analysis.")]
     [SerializeField] private float analysisInterval = 1.0f;
     [Tooltip("The volume threshold required to trigger an analysis.")]
     [SerializeField] private float audioGainThreshold = 0.01f;
-    [Tooltip("The size of the sample window for FFT analysis.")]
-    [SerializeField] private int sampleWindowSize = 1024;
 
     [Header("Server Settings")]
     [SerializeField] private string serverUrl = "http://localhost:6000";
@@ -163,11 +162,14 @@ public class AudioEmotionRecognizer : MonoBehaviour
     public event Action<BlendshapeWeights> OnBlendshapeUpdate;
     public event Action<EmotionState> OnEmotionStateChanged;
 
+    // --- NEW: Internal state for audio buffering ---
+    private readonly List<float> _audioBuffer = new List<float>();
+    private int _bufferChannels;
+    private int _bufferSampleRate;
+    private Coroutine _analysisCoroutine;
+    
     // Internal state
     public bool isAnalyzing = false;
-    private Coroutine analysisCoroutine;
-    private float[] audioSamples;
-
     private BlendshapeWeights currentBlendshapes = new BlendshapeWeights();
     private BlendshapeWeights targetBlendshapes = new BlendshapeWeights();
     private BodyAnimation currentBodyAnimation = new BodyAnimation();
@@ -183,15 +185,8 @@ public class AudioEmotionRecognizer : MonoBehaviour
 
     private void Start()
     {
-        Log("=== AUDIO EMOTION RECOGNIZER (STREAMING) START ===");
-        if (streamingAudioSource == null)
-        {
-            Log("No AudioSource assigned. Please assign a streaming AudioSource in the inspector.", LogType.Error);
-            this.enabled = false;
-            return;
-        }
-
-        audioSamples = new float[sampleWindowSize];
+        Log("=== AUDIO EMOTION RECOGNIZER (INJECTION) START ===");
+        // --- MODIFIED: Removed AudioSource checks and dependencies ---
         InitializeBlendshapeMapping();
         InitializeBodyAnimation();
 
@@ -203,10 +198,7 @@ public class AudioEmotionRecognizer : MonoBehaviour
 
     private void Update()
     {
-        if (!streamingAudioSource)
-        {
-            Debug.Log("Problem wth AudioSource");
-        }
+        // This loop remains responsible for applying animations smoothly over time.
         if (!isAnalyzing) return;
 
         if (enableBlendshapeAnimation && targetRenderer != null)
@@ -224,9 +216,28 @@ public class AudioEmotionRecognizer : MonoBehaviour
             UpdateEmotionState();
         }
     }
+    
+    /// <summary>
+    /// Injects raw audio data into the recognizer's buffer for analysis.
+    /// This should be called by the audio source (e.g., WebRtcProvider).
+    /// </summary>
+    /// <param name="audioData">The raw audio samples.</param>
+    /// <param name="channels">Number of audio channels.</param>
+    /// <param name="sampleRate">The sample rate of the audio.</param>
+    public void InjectAudioData(float[] audioData, int channels, int sampleRate)
+    {
+        if (!isAnalyzing) return;
+
+        lock (_audioBuffer)
+        {
+            _audioBuffer.AddRange(audioData);
+            _bufferChannels = channels;
+            _bufferSampleRate = sampleRate;
+        }
+    }
 
     /// <summary>
-    /// Starts the real-time emotion analysis from the assigned AudioSource.
+    /// Starts the emotion analysis.
     /// </summary>
     [ContextMenu("Start Analysis")]
     public void StartAnalysis()
@@ -236,20 +247,15 @@ public class AudioEmotionRecognizer : MonoBehaviour
             Log("Analysis is already running.", LogType.Warning);
             return;
         }
-
-        if (streamingAudioSource == null)
-        {
-            Log("Cannot start analysis: AudioSource is not assigned.", LogType.Error);
-            return;
-        }
-
+        
         isAnalyzing = true;
-        analysisCoroutine = StartCoroutine(StreamAnalysisCoroutine());
-        Log("Audio stream analysis started.");
+        // --- MODIFIED: Start the new analysis loop coroutine ---
+        _analysisCoroutine = StartCoroutine(AnalysisLoopCoroutine());
+        Log("Audio analysis started. Waiting for injected audio data.");
     }
 
     /// <summary>
-    /// Stops the real-time emotion analysis.
+    /// Stops the emotion analysis.
     /// </summary>
     [ContextMenu("Stop Analysis")]
     public void StopAnalysis()
@@ -257,59 +263,60 @@ public class AudioEmotionRecognizer : MonoBehaviour
         if (!isAnalyzing) return;
 
         isAnalyzing = false;
-        if (analysisCoroutine != null)
+        if (_analysisCoroutine != null)
         {
-            StopCoroutine(analysisCoroutine);
-            analysisCoroutine = null;
+            StopCoroutine(_analysisCoroutine);
+            _analysisCoroutine = null;
+        }
+        lock (_audioBuffer)
+        {
+            _audioBuffer.Clear();
         }
         Log("Audio stream analysis stopped.");
     }
 
-    private IEnumerator StreamAnalysisCoroutine()
+    /// <summary>
+    /// Coroutine that periodically processes the accumulated audio buffer.
+    /// This replaces the old StreamAnalysisCoroutine.
+    /// </summary>
+    private IEnumerator AnalysisLoopCoroutine()
     {
         while (isAnalyzing)
         {
+            // Wait for the specified interval before processing the next chunk.
             yield return new WaitForSeconds(analysisInterval);
 
-            if (streamingAudioSource == null || !streamingAudioSource.isPlaying)
+            float[] audioChunk;
+            int channels;
+            int frequency;
+
+            // Lock the buffer to safely copy data and clear it for the next interval.
+            lock (_audioBuffer)
             {
-                Log("AudioSource is not playing or is null. Skipping analysis.", LogType.Warning);
-                continue;
+                if (_audioBuffer.Count == 0)
+                {
+                    // No audio data received in the last interval, so skip this cycle.
+                    continue;
+                }
+
+                audioChunk = _audioBuffer.ToArray();
+                channels = _bufferChannels;
+                frequency = _bufferSampleRate;
+                _audioBuffer.Clear();
             }
 
-            streamingAudioSource.GetOutputData(audioSamples, 0);
-
-            float currentVolume = GetRootMeanSquare(audioSamples);
+            // Check if the audio chunk has enough volume to be worth analyzing.
+            float currentVolume = GetRootMeanSquare(audioChunk);
             if (currentVolume < audioGainThreshold)
             {
                 Log($"Current volume ({currentVolume:F4}) is below threshold ({audioGainThreshold:F4}). Skipping.");
                 continue;
             }
 
-            // --- FIX STARTS HERE ---
-            // Get frequency and channels safely.
-            int frequency;
-            int channels;
+            Log($"Volume threshold met ({currentVolume:F4}). Analyzing audio chunk of {audioChunk.Length} samples.");
 
-            if (streamingAudioSource.clip != null)
-            {
-                // If a clip IS assigned, its properties are more specific and should be preferred.
-                frequency = streamingAudioSource.clip.frequency;
-                channels = streamingAudioSource.clip.channels;
-                Log($"Using AudioSource clip properties: {frequency}Hz, {channels} channels.");
-            }
-            else
-            {
-                // If no clip is assigned (common for streaming), use system-wide audio settings.
-                frequency = AudioSettings.outputSampleRate;
-                // Get the channel count from the current speaker mode.
-                channels = (int)AudioSettings.speakerMode;
-                Log($"AudioSource has no clip. Using system audio settings: {frequency}Hz, {channels} channels.", LogType.Warning);
-            }
-            // --- FIX ENDS HERE ---
-
-            Log($"Volume threshold met ({currentVolume:F4}). Analyzing audio chunk.");
-            yield return StartCoroutine(AnalyzeAudioSegment(audioSamples, frequency, channels, (result) =>
+            // Analyze the audio segment and process the result in a callback.
+            yield return StartCoroutine(AnalyzeAudioSegment(audioChunk, frequency, channels, (result) =>
             {
                 if (result != null)
                 {
@@ -325,6 +332,7 @@ public class AudioEmotionRecognizer : MonoBehaviour
             }));
         }
     }
+
 
     private float GetRootMeanSquare(float[] samples)
     {

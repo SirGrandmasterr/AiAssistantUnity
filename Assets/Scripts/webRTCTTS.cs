@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using WebSocketSharp;
 using Unity.WebRTC;
-using uLipSync; // --- NEW: Add reference to uLipSync namespace ---
+using uLipSync;
 
 public class WebRtcProvider : MonoBehaviour
 {
@@ -21,9 +21,10 @@ public class WebRtcProvider : MonoBehaviour
     private AudioStreamTrack _audioTrack;
     private string _providerId;
 
-    // --- MODIFIED: Store references to linked avatar components ---
+    // --- MODIFIED: Store references to all linked avatar components ---
     private AudioSource _linkedAudioSource;
     private uLipSync.uLipSync _linkedLipSync;
+    private AudioEmotionRecognizer _linkedEmotionRecognizer; // --- NEW: Add reference to the emotion recognizer ---
     private float[] _monoBuffer; // Buffer for converting stereo to mono
 
     private void Awake()
@@ -64,8 +65,15 @@ public class WebRtcProvider : MonoBehaviour
         }
     }
     
-    // --- MODIFIED: New method to link all necessary components from the avatar ---
-    public void LinkAvatarComponents(AudioSource source, uLipSync.uLipSync lipSync)
+    // --- MODIFIED: New method signature to link all necessary components from the avatar ---
+    /// <summary>
+    /// Links the necessary avatar components to the WebRTC Provider.
+    /// This allows the provider to stream audio data for playback, lip-sync, and emotion recognition.
+    /// </summary>
+    /// <param name="source">The AudioSource for audio playback.</param>
+    /// <param name="lipSync">The uLipSync component for lip-sync animation.</param>
+    /// <param name="emotionRecognizer">The AudioEmotionRecognizer for emotion analysis.</param>
+    public void LinkAvatarComponents(AudioSource source, uLipSync.uLipSync lipSync, AudioEmotionRecognizer emotionRecognizer)
     {
         if (source != null)
         {
@@ -80,12 +88,23 @@ public class WebRtcProvider : MonoBehaviour
         if (lipSync != null)
         {
             _linkedLipSync = lipSync;
-            _linkedLipSync.manualAudioInput = true; // --- IMPORTANT: Set uLipSync to manual mode ---
+            _linkedLipSync.manualAudioInput = true;
             Debug.Log("uLipSync component has been successfully linked and set to manual input mode.");
         }
         else
         {
             Debug.LogError("Attempted to link a null uLipSync component.");
+        }
+        
+        // --- NEW: Link the AudioEmotionRecognizer ---
+        if (emotionRecognizer != null)
+        {
+            _linkedEmotionRecognizer = emotionRecognizer;
+            Debug.Log("AudioEmotionRecognizer has been successfully linked.");
+        }
+        else
+        {
+            Debug.LogWarning("Attempted to link a null AudioEmotionRecognizer.");
         }
 
         // If an audio track has already been received, configure it now.
@@ -100,12 +119,11 @@ public class WebRtcProvider : MonoBehaviour
         if (e.Track is AudioStreamTrack audioTrack)
         {
             _audioTrack = audioTrack;
-            // Now that we have a track, set it up for playback and lip-sync analysis.
             SetupAudioTrack();
         }
     }
 
-    // --- NEW: Centralized method for setting up the audio track ---
+    // --- MODIFIED: Centralized method for setting up the audio track for all consumers ---
     private void SetupAudioTrack()
     {
         // 1. Set up audio for playback via the linked AudioSource
@@ -131,12 +149,23 @@ public class WebRtcProvider : MonoBehaviour
         {
              Debug.LogWarning("Received an audio track, but the uLipSync component is not yet linked!");
         }
+        
+        // --- NEW: Set up audio for emotion recognition ---
+        if (_linkedEmotionRecognizer != null)
+        {
+            Debug.Log("Subscribing to OnAudioReceived event for emotion analysis.");
+            _audioTrack.onReceived += OnAudioReceivedForEmotion;
+        }
+        else
+        {
+            Debug.LogWarning("Received an audio track, but the AudioEmotionRecognizer is not yet linked!");
+        }
     }
-
-    // --- NEW: This is the core of the fix. It gets raw audio data directly from WebRTC. ---
+    
     private void OnAudioReceivedForLipSync(float[] data, int channels, int timestamp)
     {
         if (_linkedLipSync == null) return;
+        
         // uLipSync's InjectAudioData expects a mono buffer.
         // We must convert the data if the source is stereo or multi-channel.
         if (channels > 1)
@@ -161,10 +190,18 @@ public class WebRtcProvider : MonoBehaviour
         }
     }
 
-    // --- DEPRECATED/REMOVED: The old SetAudioSource method is replaced by LinkAvatarComponents ---
-    // public void SetAudioSource(AudioSource source) { ... }
-
-    // --- The rest of your WebRTC and WebSocket logic remains the same ---
+    // --- NEW: Event handler to feed raw audio data directly to the AudioEmotionRecognizer ---
+    private void OnAudioReceivedForEmotion(float[] data, int channels, int timestamp)
+    {
+        Debug.Log("timestamp: " + timestamp);
+        if (_linkedEmotionRecognizer != null && _audioTrack != null)
+        {
+            // Inject the raw audio data, number of channels, and the track's sample rate
+            // into the emotion recognizer's buffer.
+            _linkedEmotionRecognizer.InjectAudioData(data, channels, timestamp);
+        }
+    }
+    
     #region WebRTC and WebSocket Logic
     public string GetConnectionState() => connectionState;
 
@@ -270,9 +307,11 @@ public class WebRtcProvider : MonoBehaviour
 
     void OnDestroy()
     {
+        // --- MODIFIED: Unsubscribe all event listeners ---
         if (_audioTrack != null)
         {
             _audioTrack.onReceived -= OnAudioReceivedForLipSync;
+            _audioTrack.onReceived -= OnAudioReceivedForEmotion; // --- NEW: Unsubscribe emotion handler
         }
         if (_peerConnection != null) { _peerConnection.Close(); }
         if (_receiveStream != null) { _receiveStream.Dispose(); }

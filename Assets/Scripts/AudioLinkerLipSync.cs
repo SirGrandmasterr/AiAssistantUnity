@@ -10,12 +10,13 @@ using uLipSync; // Add reference to uLipSync namespace
 [RequireComponent(typeof(uLipSync.uLipSync))]
 public class AvatarAudioLinkerLipSync : MonoBehaviour
 {
+    public AudioEmotionRecognizer audioEmotionRecognizer;
     void Start()
     {
         // Find the local components on this avatar GameObject.
         AudioSource avatarAudioSource = GetComponentInParent<AudioSource>();
         uLipSync.uLipSync lipSyncComponent = GetComponent<uLipSync.uLipSync>();
-
+        
         // Find the persistent WebRtcProvider instance.
         WebRtcProvider rtcProvider = WebRtcProvider.Instance;
 
@@ -24,7 +25,7 @@ public class AvatarAudioLinkerLipSync : MonoBehaviour
             // Use the new public method to link this avatar's components
             // to the provider. The provider will handle everything else.
             Debug.Log("AvatarAudioLinker is linking local components to the WebRtcProvider.");
-            rtcProvider.LinkAvatarComponents(avatarAudioSource, lipSyncComponent);
+            rtcProvider.LinkAvatarComponents(avatarAudioSource, lipSyncComponent, audioEmotionRecognizer);
         }
         else
         {
