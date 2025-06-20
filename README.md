@@ -70,7 +70,7 @@ OrpheusTTS handles the text-to-speech functionality for the project.
 
 4.  **Open a new terminal** and install the `RealtimeTTS` library:
     ```bash
-    pip install "RealtimeTTS[orpheus]"
+    pip install "RealtimeTTS[all]"
     ```
 
 5.  **Run the connection script:**
