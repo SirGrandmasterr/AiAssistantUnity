@@ -15,14 +15,14 @@ public class SceneTimeManager : MonoBehaviour
     public string endSceneName = "EndScreen";
 
     [Tooltip("The maximum time in seconds the player can stay in the scene.")]
-    public float maxTimeInScene = 300f; // 5 minutes
+    public float maxTimeInScene = 120f; // 2 minutes
 
     [Tooltip("The grace period in seconds to add if the last recording is made near the end.")]
-    public float gracePeriod = 30f; // 30 seconds
+    public float gracePeriod = 10f; // 30 seconds
 
     [Header("Recording Action Settings")]
     [Tooltip("The maximum number of recording actions allowed.")]
-    public int maxRecordings = 3;
+    public int maxRecordings = 2;
 
     [Tooltip("How close to the end (in seconds) a recording must be to grant a grace period.")]
     public float gracePeriodThreshold = 10f; // If last recording is within 30s of the 5-min mark
