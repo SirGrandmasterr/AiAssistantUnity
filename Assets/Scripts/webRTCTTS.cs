@@ -193,7 +193,7 @@ public class WebRtcProvider : MonoBehaviour
     // --- NEW: Event handler to feed raw audio data directly to the AudioEmotionRecognizer ---
     private void OnAudioReceivedForEmotion(float[] data, int channels, int timestamp)
     {
-        Debug.Log("timestamp: " + timestamp);
+        
         if (_linkedEmotionRecognizer != null && _audioTrack != null)
         {
             // Inject the raw audio data, number of channels, and the track's sample rate
