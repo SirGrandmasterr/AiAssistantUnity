@@ -183,12 +183,7 @@ public class MiniBrain : MonoBehaviour
 
         _websocket.OnOpen += () =>
         {
-            Debug.Log("Connection to Llamacommunicator open!");
-            LlamaWebsockRequest msg = new LlamaWebsockRequest();
-            msg.messageType = "initializePlayer";
-            msg.playerContext = new PlayerContext();
-            msg.playerContext.playerUsername = PlayerPrefs.GetString("username");
-            _websocket.SendText(JsonUtility.ToJson(msg));
+          
         };
 
         _websocket.OnError += e => { Debug.Log("Error! " + e); };
@@ -538,7 +533,7 @@ public class MiniBrain : MonoBehaviour
 
             var res = await whisper.GetTextAsync(recordedAudio.Data, recordedAudio.Frequency, recordedAudio.Channels);
             //brain.SendHistoryUpdate("VISITOR: " + res.Result + "\n", true, "speech");
-            SendPlayerSpeech(res.Result);
+            
             evalInput.text = res.Result;
             
             //if (res == null || !outputText) 

@@ -23,7 +23,7 @@ public class SceneTimeManager : MonoBehaviour
 
     [Header("Recording Action Settings")]
     [Tooltip("The maximum number of recording actions allowed.")]
-    public int maxRecordings = 2;
+    public int maxRecordings = PlayerPrefs.GetInt("maxRecordings");
 
     [Tooltip("How close to the end (in seconds) a recording must be to grant a grace period.")]
     public float gracePeriodThreshold = 10f; // If last recording is within 30s of the 5-min mark

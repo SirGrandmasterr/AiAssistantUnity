@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
@@ -14,6 +15,10 @@ public class SceneSelectManager : MonoBehaviour
     public Button scenario2Button;
     public Button scenario3Button;
     public Button scenario4Button;
+    public Button setRecordingButton;
+    public TMP_InputField recordingInput;
+    public TMP_Text recordingsText;
+    
 
      
     private WebRtcProvider _webRtcProvider;
@@ -24,15 +29,54 @@ public class SceneSelectManager : MonoBehaviour
         _address = PlayerPrefs.GetString("Address");
         StartCoroutine(TestConnection("http://" + _address + "/ping"));
         StartCoroutine(ttsConnectionState());
-        
-
+        PlayerPrefs.SetInt("maxRecordings", 2);
+        recordingsText.text = "Recordings: " + PlayerPrefs.GetInt("maxRecordings").ToString();
 
         scenario1Button.onClick.AddListener(SetScenario1);
         scenario2Button.onClick.AddListener(SetScenario2);
         scenario3Button.onClick.AddListener(SetScenario3);
         scenario4Button.onClick.AddListener(SetScenario4);
         
+        scenario4Button.onClick.AddListener(SetMaxRecordings);
         
+    }
+
+    public void SetMaxRecordings()
+    {
+        // Ensure the input field is not null before proceeding
+        if (recordingInput == null)
+        {
+            Debug.LogError("Recording Input Field is not assigned!");
+            return;
+        }
+
+        string inputText = recordingInput.text;
+        int parsedValue;
+
+        // Try to parse the input text into an integer
+        if (int.TryParse(inputText, out parsedValue))
+        {
+            // Check if the parsed value is within the valid range (1 to 10)
+            if (parsedValue >= 1 && parsedValue <= 10)
+            {
+                // If valid, set the PlayerPref
+                PlayerPrefs.SetInt("maxRecordings", parsedValue);
+                recordingsText.text = "Recordings: " + PlayerPrefs.GetInt("maxRecordings").ToString();
+                // Save changes to disk immediately (good practice for PlayerPrefs)
+                PlayerPrefs.Save();
+                Debug.Log($"PlayerPref 'maxRecordings' set to: {parsedValue}");
+            }
+            else
+            {
+                // Value is an integer but out of range
+                Debug.LogWarning($"Entered value '{inputText}' is out of the valid range (1-10). PlayerPref not set.");
+            }
+        }
+        else
+        {
+            // Input text is not a valid integer
+            Debug.LogWarning($"Entered text '{inputText}' is not a valid integer. PlayerPref not set.");
+        }
     }
     IEnumerator TestConnection(string uri)
     {
