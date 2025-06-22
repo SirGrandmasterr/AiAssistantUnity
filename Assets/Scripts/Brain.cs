@@ -25,7 +25,6 @@ public class Brain : MonoBehaviour
     public bool isSpeaking;
     public EmotionMeter emotionMeter;
     private Stopwatch sw;
-    private int tk;
     private EmotionStatisticsManager _emotionStatisticsManager;
 
     [Serializable]
@@ -116,7 +115,6 @@ public class Brain : MonoBehaviour
     // Start is called before the first frame update
     private async void Start()
     {   
-        tk = 0;
         sw = new Stopwatch();
         isSpeaking = false;
         repairAvailable = false;

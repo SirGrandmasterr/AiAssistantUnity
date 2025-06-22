@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -19,12 +20,12 @@ public class EvaluationManager : MonoBehaviour
    
     private string correctScenarioKey = "scenarioInt"; // The PlayerPrefs key to check.
     public bool isButtonSelected = false; // Prevents further interaction after a choice is made.
-
+    public TMP_InputField userInput;
 
     void Start()
     {   
         PlayerPrefs.SetInt("scenario", 3);
-        resetButton.enabled = false;
+        resetButton.enabled = true;
         resetButton.onClick.AddListener(ResetScenario);
         Debug.Log("Correct Button Color: " + correctButtonColor);
         Debug.Log("Not Clicked Button Color: " + notClickedButtonColor);
@@ -32,6 +33,8 @@ public class EvaluationManager : MonoBehaviour
         correctButtonColor = new Color(0.6f, 1f, 0.6f, 1f); 
         notClickedButtonColor = new Color(0.5f, 0.5f, 0.5f, 1f);
         wrongButtonColor = new Color(1f, 0.35f, 0.4f, 1f);
+        userInput.lineType = TMP_InputField.LineType.MultiLineNewline;
+        userInput.textComponent.enableWordWrapping = true;
         
         // Ensure buttons are assigned to prevent errors.
         if (evaluationButtons == null || evaluationButtons.Length != 4)
