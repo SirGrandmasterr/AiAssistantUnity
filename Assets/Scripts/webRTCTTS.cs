@@ -283,9 +283,10 @@ public class WebRtcProvider : MonoBehaviour
         ws.Send(JsonUtility.ToJson(msg));
     }
     
-    public Task SendTextMessageForTTS(string text, string voice = "dan")
+    public Task SendTextMessageForTTS(string text, string voice = "leo")
     {
         text = RemoveTextInAsterisks(text);
+        text = RemoveTextInBrackets(text);
         text = CleanSentence(text);
         if (ws != null && ws.IsAlive)
         {
@@ -296,6 +297,7 @@ public class WebRtcProvider : MonoBehaviour
     }
     
     public static string RemoveTextInAsterisks(string inputText) => Regex.Replace(inputText ?? "", @"\*.*?\*", string.Empty);
+    public static string RemoveTextInBrackets(string inputText) => Regex.Replace(inputText ?? "", @"s*\(.*?\)", string.Empty);
     private static readonly HashSet<string> allowedTags = new HashSet<string> { "laugh", "chuckle", "sigh", "cough", "sniffle", "groan", "yawn", "gasp" };
     public static string CleanSentence(string inputSentence)
     {

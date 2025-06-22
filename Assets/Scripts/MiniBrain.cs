@@ -159,6 +159,7 @@ public class MiniBrain : MonoBehaviour
     // Start is called before the first frame update
     private async void Start()
     {
+        Cursor.visible = true;
         sendButton.onClick.AddListener(SendEvalEvent);
         recordingStopwatch = new Stopwatch();
         tk = 0;
@@ -302,13 +303,6 @@ public class MiniBrain : MonoBehaviour
         msg.playerContext = pc;
         msg.eventContext = new EventContext();
         emotionStatisticsManager.DisplayFinalEmotionSummary();
-
-        if (PlayerInConversation && PlayerGaze.Valid)
-        {
-            msg.assistantContext.focusedAsset = PlayerGaze.ObjectOfInterest.name;
-        }
-
-        print("Focused Asset: " + msg.assistantContext.focusedAsset);
         _websocket.SendText(Newtonsoft.Json.JsonConvert.SerializeObject(msg));
     }
 

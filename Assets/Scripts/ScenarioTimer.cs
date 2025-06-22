@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using UnityEngine.UIElements;
 
 /// <summary>
 /// Manages the time a player spends in a scene.
@@ -50,6 +51,12 @@ public class SceneTimeManager : MonoBehaviour
 
         // Check if the time limit has been exceeded.
         CheckTimeLimit();
+        if (Input.GetKeyDown("k"))
+        {
+            isTransitioning = true;
+            
+            StartCoroutine(FadeToScene(endSceneName, 5.0f));
+        }
     }
 
 

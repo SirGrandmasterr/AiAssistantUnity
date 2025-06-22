@@ -115,6 +115,7 @@ public class Brain : MonoBehaviour
     // Start is called before the first frame update
     private async void Start()
     {   
+        Cursor.visible = true;
         sw = new Stopwatch();
         isSpeaking = false;
         repairAvailable = false;
