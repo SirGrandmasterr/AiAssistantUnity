@@ -22,7 +22,7 @@ public class EvaluationManager : MonoBehaviour
 
 
     void Start()
-    {   //REMOVE THIS LATER
+    {   
         PlayerPrefs.SetInt("scenario", 3);
         resetButton.enabled = false;
         resetButton.onClick.AddListener(ResetScenario);
@@ -40,7 +40,7 @@ public class EvaluationManager : MonoBehaviour
             return;
         }
 
-        // Add an onClick listener programmatically to each button.
+        /*// Add an onClick listener programmatically to each button.
         for (int i = 0; i < evaluationButtons.Length; i++)
         {
             Debug.Log("Adding Listener");
@@ -49,7 +49,7 @@ public class EvaluationManager : MonoBehaviour
             evaluationButtons[i].interactable = true;
         }
         
-        EventSystem.current.SetSelectedGameObject(evaluationButtons[0].gameObject);
+        EventSystem.current.SetSelectedGameObject(evaluationButtons[0].gameObject);*/
     }
     
     public void OnEvaluationButtonClicked(int clickedButtonIndex)

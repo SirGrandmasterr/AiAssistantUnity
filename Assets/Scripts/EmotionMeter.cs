@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 /// </summary>
 [System.Serializable]
 public struct EmotionalTrigger
-{ 
+{
     public int Id { get; set; }
     public string Description { get; set; }
     public string TargetEmotion { get; set; }
@@ -50,10 +50,9 @@ public class EmotionMeter : MonoBehaviour
         {
             PlayerPrefs.SetString("Scenario", "scenario1");
         }
+
         InitializeDefaultState();
         Debug.Log(Newtonsoft.Json.JsonConvert.SerializeObject(currentState, Newtonsoft.Json.Formatting.Indented));
-        
-        
     }
 
     /// <summary>
@@ -62,171 +61,158 @@ public class EmotionMeter : MonoBehaviour
     /// </summary>
     public void InitializeDefaultState()
     {
-        if (scenario == "scenario1")
+        if (scenario == "angry")
         {
             currentState = new EmotionalState
             {
-                Emotions = new Dictionary<string, int>  //SURPRISE scenario
-                {
-                    { "Joy", 75 }, // A significant surge of joy from newfound hope
-                    { "Trust", 60 }, // Developing trust in Maya and the discovery
-                    { "Fear", 0 },
-                    { "Surprise", 95 }, // Overwhelming surprise at the revelation
-                    { "Sadness", 10 }, // Residual sadness from his previous struggles, now fading
-                    { "Disgust", 0 },
-                    { "Anger", 0 },
-                    { "Anticipation", 80 } // High anticipation for the implications of this discovery
-                },
-                Triggers = new List<EmotionalTrigger>
-                {
-                    new EmotionalTrigger
-                    {
-                        Id = 1,
-                        Description = "Maya, a representative from a historical preservation society, identified one of your old, discarded paintings as remarkably similar to the lost early work of a renowned, reclusive master, and provided photographic evidence linking it to the cottage's attic.",
-                        TargetEmotion = "Surprise",
-                        Intensity = 95
-                    },
-                    new EmotionalTrigger
-                    {
-                        Id = 2,
-                        Description = "The sudden and complete reversal of your self-perception and career prospects, transforming a 'failed' painting into a potentially priceless and historically significant artwork.",
-                        TargetEmotion = "Joy",
-                        Intensity = 75
-                    },
-                    new EmotionalTrigger
-                    {
-                        Id = 3,
-                        Description = "The unexpected connection between his newly inherited, dilapidated cottage and a renowned artist's past, adding profound meaning to his new home.",
-                        TargetEmotion = "Anticipation",
-                        Intensity = 80
-                    }
-                }
-            };
-            
-        }else if (scenario == "scenario2")
-        {
-            currentState = new EmotionalState
-            {
-                Emotions = new Dictionary<string, int> //JOY scenario
-                {
-                    { "Joy", 95 }, // Overwhelmed by the monumental support
-                    { "Trust", 85 }, // Trust in Liam and the community
-                    { "Fear", 5 }, // Minor residual anxieties about past setbacks, but largely overridden
-                    { "Surprise", 90 }, // Highly surprised by the extent of the support
-                    { "Sadness", 0 },
-                    { "Disgust", 0 },
-                    { "Anger", 0 },
-                    { "Anticipation", 70 } // Anticipation for the garden and community center's future
-                },
-                Triggers = new List<EmotionalTrigger>
-                {
-                    new EmotionalTrigger
-                    {
-                        Id = 1,
-                        Description = "Liam, a casual acquaintance, revealed he's secured pro-bono architectural work, material donations, and a team of volunteers not just to finish the community garden, but to build a solar-powered community center on the lot as well, far exceeding all previous hopes and efforts.",
-                        TargetEmotion = "Joy",
-                        Intensity = 95
-                    },
-                    new EmotionalTrigger
-                    {
-                        Id = 2,
-                        Description = "The unexpected and vast scale of support from Liam and his network for her long-standing passion project.",
-                        TargetEmotion = "Surprise",
-                        Intensity = 70
-                    },
-                    new EmotionalTrigger
-                    {
-                        Id = 3,
-                        Description = "A newfound sense of trust and belief in the community's support for her vision.",
-                        TargetEmotion = "Trust",
-                        Intensity = 85
-                    }
-                }
-            };
-        }else if (scenario == "scenario3")
-        {
-            currentState = new EmotionalState
-            {
-                Emotions = new Dictionary<string, int> //FEAR scenario
+                Emotions = new Dictionary<string, int>
                 {
                     { "Joy", 0 },
-                    { "Trust", 10 }, // Severely diminished trust in the stranger
-                    { "Fear", 95 }, // Overwhelming fear
-                    { "Surprise", 80 }, // Highly surprised by the stranger's knowledge
-                    { "Sadness", 15 }, // Residual sadness from the cat's disappearance
-                    { "Disgust", 0 },
-                    { "Anger", 20 }, // Some anger at the intrusion and implied threat
-                    { "Anticipation", 70 } // Anxious anticipation of what the stranger will do next
-                },
-                Triggers = new List<EmotionalTrigger> 
-                {
-                    new EmotionalTrigger
-                    {
-                        Id = 1,
-                        Description = "A stranger, Sarah, who claimed to be a lost hiker, casually revealed knowledge of Mark's missing cat, 'Shadow,' a detail she should not have known, immediately after entering his home.",
-                        TargetEmotion = "Fear",
-                        Intensity = 95
-                    },
-                    new EmotionalTrigger
-                    {
-                        Id = 2,
-                        Description = "The unexpected revelation by Sarah, a supposed stranger, about his cat's name, coupled with her unsettling tone.",
-                        TargetEmotion = "Surprise",
-                        Intensity = 80
-                    },
-                    new EmotionalTrigger
-                    {
-                        Id = 3,
-                        Description = "The immediate and profound betrayal of trust when Sarah revealed her sinister knowledge, indicating she is not who she claims to be.",
-                        TargetEmotion = "Trust",
-                        Intensity = -75 // Represents a significant drop in trust
-                    }
-                }
-            };
-        }else if (scenario == "scenario4")
-        {
-            currentState = new EmotionalState
-            {
-                Emotions = new Dictionary<string, int> //ANGER scenario
-                {
-                    { "Joy", 0 },
-                    { "Trust", 5 }, // Trust in David is almost completely eroded
-                    { "Fear", 10 }, // Minor fear of the scandal not being exposed
-                    { "Surprise", 70 }, // Surprised by David's betrayal
-                    { "Sadness", 20 }, // Sadness over the potential failure of her work and betrayal
-                    { "Disgust", 50 }, // Disgust at David's actions and the implied corruption
-                    { "Anger", 90 }, // Intense anger at David's betrayal and sabotage
-                    { "Anticipation", 40 } // Anticipation for confronting David or finding another way to publish
+                    { "Trust", 40 },
+                    { "Fear", 5 },
+                    { "Surprise", 10 },
+                    { "Sadness", 25 },
+                    { "Disgust", 80 },
+                    { "Anger", 90 },
+                    { "Anticipation", 15 }
                 },
                 Triggers = new List<EmotionalTrigger>
                 {
                     new EmotionalTrigger
                     {
                         Id = 1,
-                        Description = "Aisha discovered her long-time editor and mentor, David, subtly sabotaging her highly anticipated corruption expose, suggesting she 'take a break' and downplaying her irrefutable evidence, clearly betraying her trust and the story.",
+                        Description =
+                            "Overheard patrons discussing a piece of art purely as a financial asset and tax write-off.",
                         TargetEmotion = "Anger",
                         Intensity = 90
                     },
                     new EmotionalTrigger
                     {
                         Id = 2,
-                        Description = "The profound betrayal by her trusted editor, whom she had implicitly relied upon for her groundbreaking investigative work.",
-                        TargetEmotion = "Trust",
-                        Intensity = -90 // Represents a significant drop in trust
+                        Description =
+                            "The commodification of art, reducing its cultural and emotional value to a monetary one.",
+                        TargetEmotion = "Disgust",
+                        Intensity = 80
+                    }
+                }
+            };
+        }
+        else if (scenario == "sad")
+        {
+            currentState = new EmotionalState
+            {
+                Emotions = new Dictionary<string, int>
+                {
+                    { "Joy", 10 },
+                    { "Trust", 55 },
+                    { "Fear", 0 },
+                    { "Surprise", 30 },
+                    { "Sadness", 95 },
+                    { "Disgust", 0 },
+                    { "Anger", 0 },
+                    { "Anticipation", 20 }
+                },
+                Triggers = new List<EmotionalTrigger>
+                {
+                    new EmotionalTrigger
+                    {
+                        Id = 1,
+                        Description =
+                            "Seeing a landscape painting that unexpectedly and vividly recalled memories of a recently deceased grandfather.",
+                        TargetEmotion = "Sadness",
+                        Intensity = 95
+                    },
+                    new EmotionalTrigger
+                    {
+                        Id = 2,
+                        Description = "The sudden and involuntary nature of the grief-filled memory.",
+                        TargetEmotion = "Surprise",
+                        Intensity = 30
+                    }
+                }
+            };
+        }
+        else if (scenario == "joyful")
+        {
+            currentState = new EmotionalState
+            {
+                Emotions = new Dictionary<string, int>
+                {
+                    { "Joy", 98 },
+                    { "Trust", 75 },
+                    { "Fear", 0 },
+                    { "Surprise", 90 },
+                    { "Sadness", 0 },
+                    { "Disgust", 0 },
+                    { "Anger", 0 },
+                    { "Anticipation", 95 }
+                },
+                Triggers = new List<EmotionalTrigger>
+                {
+                    new EmotionalTrigger
+                    {
+                        Id = 1,
+                        Description =
+                            "Unexpectedly seeing 'The Sunken Cathedral', a painting you wrote your thesis on and never expected to see in person.",
+                        TargetEmotion = "Joy",
+                        Intensity = 98
+                    },
+                    new EmotionalTrigger
+                    {
+                        Id = 2,
+                        Description = "The sheer improbability and luck of the encounter.",
+                        TargetEmotion = "Surprise",
+                        Intensity = 90
+                    }
+                }
+            };
+        }
+
+        else if (scenario == "surprised")
+        {
+            currentState = new EmotionalState
+            {
+                Emotions = new Dictionary<string, int>
+                {
+                    { "Joy", 10 }, // A thrill of discovery
+                    { "Trust", 30 }, // Unsure who to trust with the information
+                    { "Fear", 70 }, // Fear of being wrong, or of the implications of being right
+                    { "Surprise", 95 }, // Primary state is intellectual shock
+                    { "Sadness", 5 },
+                    { "Disgust", 10 },
+                    { "Anger", 5 },
+                    { "Anticipation", 85 } // High anticipation of what this discovery means
+                },
+                Triggers = new List<EmotionalTrigger>
+                {
+                    new EmotionalTrigger
+                    {
+                        Id = 1,
+                        Description =
+                            "Noticed an anachronistic pigment (Phthalo Green) in a famous 18th-century painting, implying it's a forgery.",
+                        TargetEmotion = "Surprise",
+                        Intensity = 95
+                    },
+                    new EmotionalTrigger
+                    {
+                        Id = 2,
+                        Description =
+                            "The intellectual shock and professional fear associated with uncovering a potential major art fraud.",
+                        TargetEmotion = "Fear",
+                        Intensity = 70
                     },
                     new EmotionalTrigger
                     {
                         Id = 3,
-                        Description = "The unexpected realization that David, her mentor, was actively working against you and the publication of your meticulously gathered evidence.",
-                        TargetEmotion = "Surprise",
-                        Intensity = 70
+                        Description = "Urgency and curiosity about confirming the discovery and its consequences.",
+                        TargetEmotion = "Anticipation",
+                        Intensity = 85
                     }
                 }
             };
-
         }
 
-        Debug.Log("EmotionMeter initialized with "+ scenario + " state.");
+        Debug.Log("EmotionMeter initialized with " + scenario + " state.");
     }
 
     /// <summary>
@@ -248,7 +234,7 @@ public class EmotionMeter : MonoBehaviour
     {
         currentState = newState;
         Debug.Log("EmotionalState has been updated.");
-        
+
         // Optional: You could log the new dominant emotion for easier debugging.
         // LogDominantEmotion();
     }
@@ -279,3 +265,9 @@ public class EmotionMeter : MonoBehaviour
         Debug.Log($"Current dominant emotion: {dominantEmotion} with intensity {maxIntensity}");
     }
 }
+
+
+/*
+
+
+ */

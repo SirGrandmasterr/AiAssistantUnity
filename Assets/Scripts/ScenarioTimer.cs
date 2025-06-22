@@ -60,7 +60,7 @@ public class SceneTimeManager : MonoBehaviour
     /// </summary>
     public void RecordAction()
     {
-        if (recordingCount < maxRecordings)
+        if (CanRecord()) // Use the new CanRecord method here
         {
             recordingCount++;
             lastRecordingTime = currentTime;
@@ -77,6 +77,15 @@ public class SceneTimeManager : MonoBehaviour
                 StartCoroutine(FadeToScene(endSceneName, 5.0f));
             }
         }
+    }
+
+    /// <summary>
+    /// Checks if a further recording can be made based on the maximum allowed recordings.
+    /// </summary>
+    /// <returns>True if a recording can be made, false otherwise.</returns>
+    public bool CanRecord()
+    {
+        return recordingCount < maxRecordings;
     }
 
 

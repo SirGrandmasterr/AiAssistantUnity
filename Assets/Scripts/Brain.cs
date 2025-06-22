@@ -26,7 +26,7 @@ public class Brain : MonoBehaviour
     public EmotionMeter emotionMeter;
     private Stopwatch sw;
     private int tk;
-    
+    private EmotionStatisticsManager _emotionStatisticsManager;
 
     [Serializable]
     public struct AssistantContext
@@ -51,6 +51,7 @@ public class Brain : MonoBehaviour
         public string selectedBasePrompt;
 
         public EmotionalState emotionalState;
+        public Dictionary<string, float> facePercentages;
     }
 
     [Serializable]
@@ -129,6 +130,7 @@ public class Brain : MonoBehaviour
         Debug.Log(url);
         _websocket = new WebSocket(url);
         webRtcTts = WebRtcProvider.Instance;
+        _emotionStatisticsManager = EmotionStatisticsManager.Instance;
 
         _websocket.OnOpen += () =>
         {
@@ -138,6 +140,7 @@ public class Brain : MonoBehaviour
             msg.playerContext = new PlayerContext();
             msg.playerContext.playerUsername = PlayerPrefs.GetString("username");
             _websocket.SendText(JsonUtility.ToJson(msg));
+            SendIntroductionEvent();
         };
 
         _websocket.OnError += e => { Debug.Log("Error! " + e); };
@@ -156,7 +159,7 @@ public class Brain : MonoBehaviour
                     if (!isSpeaking)
                     {
                         //print(sw.ElapsedMilliseconds + "history tokens: " + tk);
-                        SendHistoryUpdate("ASSISTANT: '" + msg.text);
+                        SendHistoryUpdate("LEO: '" + msg.text);
                         isSpeaking = true;
                     }
                     else if (msg.actionName == "stopSpeak")
@@ -190,6 +193,7 @@ public class Brain : MonoBehaviour
 
         // waiting for messages
         await _websocket.Connect();
+        
     }
 
     private void Update()
@@ -199,27 +203,19 @@ public class Brain : MonoBehaviour
 #endif
     }
 
-    public void SendTestEvent()
+    public void SendIntroductionEvent()
     {
-        SendHistoryUpdate("I will now explain the concept of programming. Programming is the process of designing, writing, testing, and maintaining the instructions that a computer follows to perform a specific task. These instructions are called programs. A program consists of a series of statements or commands that tell the computer what actions to take in order to achieve a particular goal. The programmer writes these statements using a programming language, which is a set of rules and syntax for communicating with computers. There are many different types of programming languages, I will now explain the concept of programming. Programming is the process of designing, writing, testing, and maintaining the instructions that a computer follows to perform a specific task. These instructions are called programs. A program consists of a series of statements or commands that tell the computer what actions to take in order to achieve a particular goal. The programmer writes these statements using a programming language, which is a set of rules and syntax for communicating with computers. There are many different types of programming languages... is it.");
-        sw.Restart();
-        tk += 200;
-        var ac = InquireAssistantContext(true,false);
+        var ac = InquireAssistantContext(false,true);
         var pc = InquirePlayerContext();
         LlamaWebsockRequest msg = new LlamaWebsockRequest();
         msg.messageType = "speech"; 
         msg.playerActionType = "speech";
-        msg.speech = "text";
+        msg.speech = "";
         msg.assistantContext = ac;
         msg.playerContext = pc;
         msg.eventContext = new EventContext();
 
-        if (PlayerInConversation && PlayerGaze.Valid)
-        {
-            msg.assistantContext.focusedAsset = PlayerGaze.ObjectOfInterest.name;
-        }
-
-        msg.assistantContext.availableActions = new string[] { "testAction" };
+        msg.assistantContext.availableActions = new string[] { "introduceYourself" };
         _websocket.SendText(Newtonsoft.Json.JsonConvert.SerializeObject(msg));
     }
 
@@ -502,7 +498,8 @@ public class Brain : MonoBehaviour
             walkingState = walkingstate, 
             focusedAsset = "",
             selectedBasePrompt = GetBasePrompt(),
-            emotionalState = emotionalState
+            emotionalState = emotionalState,
+            facePercentages = _emotionStatisticsManager.GetFinalEmotionSummary().emotionPercentages
         };
         
         return context;

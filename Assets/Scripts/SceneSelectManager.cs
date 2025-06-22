@@ -93,30 +93,30 @@ public class SceneSelectManager : MonoBehaviour
 
     void SetScenario1()
     {
-        PlayerPrefs.SetString("Scenario", "scenario1");
+        PlayerPrefs.SetString("Scenario", "sad");
         PlayerPrefs.SetInt("scenarioInt", 1);
-        PlayerPrefs.SetString("selectedBasePrompt", "scenario1");
+        PlayerPrefs.SetString("selectedBasePrompt", "sad");
         SceneManager.LoadScene("Gallery MWS_DEMO");
     }
     void SetScenario2()
     {
-        PlayerPrefs.SetString("Scenario", "scenario2");
+        PlayerPrefs.SetString("Scenario", "angry");
         PlayerPrefs.SetInt("scenarioInt", 2);
-        PlayerPrefs.SetString("selectedBasePrompt", "scenario2");
+        PlayerPrefs.SetString("selectedBasePrompt", "angry");
         SceneManager.LoadScene("Gallery MWS_DEMO");
     }
     void SetScenario3()
     {
-        PlayerPrefs.SetString("Scenario", "scenario3");
+        PlayerPrefs.SetString("Scenario", "joyful");
         PlayerPrefs.SetInt("scenarioInt", 3);
-        PlayerPrefs.SetString("selectedBasePrompt", "scenario3");
+        PlayerPrefs.SetString("selectedBasePrompt", "joyful");
         SceneManager.LoadScene("Gallery MWS_DEMO");
     }
     void SetScenario4()
     {
-        PlayerPrefs.SetString("Scenario", "scenario4");
+        PlayerPrefs.SetString("Scenario", "surprised");
         PlayerPrefs.SetInt("scenarioInt", 4);
-        PlayerPrefs.SetString("selectedBasePrompt", "scenario4");
+        PlayerPrefs.SetString("selectedBasePrompt", "surprised");
         SceneManager.LoadScene("Gallery MWS_DEMO");
     }
     

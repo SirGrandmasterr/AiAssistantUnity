@@ -112,27 +112,34 @@ namespace Whisper.Ears
 
         private void OnButtonPressed()
         {
-            if (!microphoneRecord.IsRecording)
+            if (timeManager.CanRecord())
             {
-                microphoneRecord.StartRecord();
-                recordingStopwatch.Start();
-            }
-            else
-            {
-                microphoneRecord.StopRecord();
-                Debug.Log(recordingStopwatch.ElapsedMilliseconds);
-                if (recordingStopwatch.ElapsedMilliseconds < 500)
+                if (!microphoneRecord.IsRecording)
                 {
-                    recordingStopwatch.Stop();
-                    recordingStopwatch.Reset();
+                    microphoneRecord.StartRecord();
+                    recordingStopwatch.Start();
                 }
                 else
                 {
-                    Debug.Log("Recording Action");
-                    timeManager.RecordAction();
-                    recordingStopwatch.Stop();
-                    recordingStopwatch.Reset();
+                    microphoneRecord.StopRecord();
+                    Debug.Log(recordingStopwatch.ElapsedMilliseconds);
+                    if (recordingStopwatch.ElapsedMilliseconds < 500)
+                    {
+                        recordingStopwatch.Stop();
+                        recordingStopwatch.Reset();
+                    }
+                    else
+                    {
+                        Debug.Log("Recording Action");
+                        timeManager.RecordAction();
+                        recordingStopwatch.Stop();
+                        recordingStopwatch.Reset();
+                    }
                 }
+            }
+            else
+            {
+                timeManager.RecordAction();
             }
         }
         

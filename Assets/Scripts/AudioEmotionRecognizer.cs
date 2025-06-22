@@ -6,7 +6,8 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
-// Data structures for emotion analysis, blendshapes, and body animation remain the same.
+// Data structures for emotion analysis result from the server.
+// Other data structures like EmotionStatistics have been moved to EmotionStatisticsManager.
 [System.Serializable]
 public class EmotionAnalysis
 {
@@ -18,75 +19,27 @@ public class EmotionAnalysis
 public class BlendshapeWeights
 {
     // Eye expressions
-    public float eyeBlinkLeft = 0f;
-    public float eyeBlinkRight = 0f;
-    public float eyesLookUp = 0f;
-    public float eyesLookDown = 0f;
-    public float eyeSquintLeft = 0f;
-    public float eyeSquintRight = 0f;
-    public float eyeWideLeft = 0f;
-    public float eyeWideRight = 0f;
-
+    public float eyeBlinkLeft, eyeBlinkRight, eyesLookUp, eyesLookDown, eyeSquintLeft, eyeSquintRight, eyeWideLeft, eyeWideRight;
     // Eyebrow expressions
-    public float browDownLeft = 0f;
-    public float browDownRight = 0f;
-    public float browInnerUp = 0f;
-    public float browOuterUpLeft = 0f;
-    public float browOuterUpRight = 0f;
-
+    public float browDownLeft, browDownRight, browInnerUp, browOuterUpLeft, browOuterUpRight;
     // Mouth expressions
-    public float mouthFrownLeft = 0f;
-    public float mouthFrownRight = 0f;
-    public float mouthSmileLeft = 0f;
-    public float mouthSmileRight = 0f;
-    public float mouthPucker = 0f;
-    public float mouthFunnel = 0f;
-    public float mouthDimpleLeft = 0f;
-    public float mouthDimpleRight = 0f;
-    public float mouthStretchLeft = 0f;
-    public float mouthStretchRight = 0f;
-    public float mouthRollLower = 0f;
-    public float mouthRollUpper = 0f;
-    public float mouthShrugLower = 0f;
-    public float mouthShrugUpper = 0f;
-    public float mouthPressLeft = 0f;
-    public float mouthPressRight = 0f;
-    public float mouthUpperUpLeft = 0f;
-    public float mouthUpperUpRight = 0f;
-    public float mouthLowerDownLeft = 0f;
-    public float mouthLowerDownRight = 0f;
-    public float mouthLeft = 0f;
-    public float mouthRight = 0f;
-
+    public float mouthFrownLeft, mouthFrownRight, mouthSmileLeft, mouthSmileRight, mouthPucker, mouthFunnel, mouthDimpleLeft, mouthDimpleRight;
+    public float mouthStretchLeft, mouthStretchRight, mouthRollLower, mouthRollUpper, mouthShrugLower, mouthShrugUpper, mouthPressLeft, mouthPressRight;
+    public float mouthUpperUpLeft, mouthUpperUpRight, mouthLowerDownLeft, mouthLowerDownRight, mouthLeft, mouthRight;
     // Cheek expressions
-    public float cheekPuff = 0f;
-    public float cheekSquintLeft = 0f;
-    public float cheekSquintRight = 0f;
-
+    public float cheekPuff, cheekSquintLeft, cheekSquintRight;
     // Nose expressions
-    public float noseSneerLeft = 0f;
-    public float noseSneerRight = 0f;
-
+    public float noseSneerLeft, noseSneerRight;
     // Jaw expressions
-    public float jawForward = 0f;
-    public float jawLeft = 0f;
-    public float jawRight = 0f;
-    public float jawOpen = 0f;
-
+    public float jawForward, jawLeft, jawRight, jawOpen;
     // Tongue
-    public float tongueOut = 0f;
+    public float tongueOut;
 }
 
 [System.Serializable]
 public class BodyAnimation
 {
-    public Vector3 headRotation = Vector3.zero;
-    public Vector3 spineRotation = Vector3.zero;
-    public Vector3 leftShoulderRotation = Vector3.zero;
-    public Vector3 rightShoulderRotation = Vector3.zero;
-    public Vector3 leftArmRotation = Vector3.zero;
-    public Vector3 rightArmRotation = Vector3.zero;
-    public Vector3 bodyPosition = Vector3.zero;
+    public Vector3 headRotation, spineRotation, leftShoulderRotation, rightShoulderRotation, leftArmRotation, rightArmRotation, bodyPosition;
 }
 
 [System.Serializable]
@@ -109,18 +62,16 @@ public class EmotionResult
 }
 
 /// <summary>
-/// Analyzes a real-time audio stream injected from an external source (like WebRTC)
-/// for emotional content and translates it into character blendshape and body animations.
+/// Analyzes a real-time audio stream injected from an external source for emotional content
+/// and translates it into character animations. It offloads statistics management to the
+/// EmotionStatisticsManager singleton.
 /// </summary>
 public class AudioEmotionRecognizer : MonoBehaviour
 {
     [Header("Input Settings")]
     [Tooltip("Start analysis automatically when the scene loads.")]
     [SerializeField] private bool analyzeOnStart = true;
-    // --- REMOVED ---
-    // The AudioSource is no longer needed as audio is injected directly.
-    // [SerializeField] public AudioSource streamingAudioSource;
-
+    
     [Header("Analysis Settings")]
     [Tooltip("The frequency at which to process the buffered audio for analysis.")]
     [SerializeField] private float analysisInterval = 1.0f;
@@ -139,12 +90,7 @@ public class AudioEmotionRecognizer : MonoBehaviour
 
     [Header("Body Animation")]
     [SerializeField] private bool enableBodyAnimation = true;
-    [SerializeField] private Transform headTransform;
-    [SerializeField] private Transform spineTransform;
-    [SerializeField] private Transform leftShoulderTransform;
-    [SerializeField] private Transform rightShoulderTransform;
-    [SerializeField] private Transform leftArmTransform;
-    [SerializeField] private Transform rightArmTransform;
+    [SerializeField] private Transform headTransform, spineTransform, leftShoulderTransform, rightShoulderTransform, leftArmTransform, rightArmTransform;
     [SerializeField] private float bodyAnimationSpeed = 2.0f;
     [SerializeField] private float bodyAnimationIntensity = 1.0f;
 
@@ -161,32 +107,27 @@ public class AudioEmotionRecognizer : MonoBehaviour
     public event Action<EmotionResult> OnEmotionDetected;
     public event Action<BlendshapeWeights> OnBlendshapeUpdate;
     public event Action<EmotionState> OnEmotionStateChanged;
-
-    // --- NEW: Internal state for audio buffering ---
+    
+    // Internal state for audio buffering
     private readonly List<float> _audioBuffer = new List<float>();
     private int _bufferChannels;
     private int _bufferSampleRate;
     private Coroutine _analysisCoroutine;
     
-    // Internal state
-    public bool isAnalyzing = false;
+    // Internal state for animation and emotion logic
+    public bool isAnalyzing { get; private set; } = false;
     private BlendshapeWeights currentBlendshapes = new BlendshapeWeights();
     private BlendshapeWeights targetBlendshapes = new BlendshapeWeights();
     private BodyAnimation currentBodyAnimation = new BodyAnimation();
     private BodyAnimation targetBodyAnimation = new BodyAnimation();
     private Dictionary<string, int> blendshapeIndices = new Dictionary<string, int>();
-
     private Dictionary<Transform, Vector3> originalPositions = new Dictionary<Transform, Vector3>();
     private Dictionary<Transform, Quaternion> originalRotations = new Dictionary<Transform, Quaternion>();
-
-    public EmotionState emotionState = new EmotionState();
-    private List<EmotionResult> recentEmotions = new List<EmotionResult>();
-
+    public EmotionState emotionState { get; private set; } = new EmotionState();
 
     private void Start()
     {
-        Log("=== AUDIO EMOTION RECOGNIZER (INJECTION) START ===");
-        // --- MODIFIED: Removed AudioSource checks and dependencies ---
+        Log("Audio Emotion Recognizer starting up.");
         InitializeBlendshapeMapping();
         InitializeBodyAnimation();
 
@@ -198,7 +139,6 @@ public class AudioEmotionRecognizer : MonoBehaviour
 
     private void Update()
     {
-        // This loop remains responsible for applying animations smoothly over time.
         if (!isAnalyzing) return;
 
         if (enableBlendshapeAnimation && targetRenderer != null)
@@ -219,11 +159,7 @@ public class AudioEmotionRecognizer : MonoBehaviour
     
     /// <summary>
     /// Injects raw audio data into the recognizer's buffer for analysis.
-    /// This should be called by the audio source (e.g., WebRtcProvider).
     /// </summary>
-    /// <param name="audioData">The raw audio samples.</param>
-    /// <param name="channels">Number of audio channels.</param>
-    /// <param name="sampleRate">The sample rate of the audio.</param>
     public void InjectAudioData(float[] audioData, int channels, int sampleRate)
     {
         if (!isAnalyzing) return;
@@ -236,9 +172,6 @@ public class AudioEmotionRecognizer : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Starts the emotion analysis.
-    /// </summary>
     [ContextMenu("Start Analysis")]
     public void StartAnalysis()
     {
@@ -249,14 +182,10 @@ public class AudioEmotionRecognizer : MonoBehaviour
         }
         
         isAnalyzing = true;
-        // --- MODIFIED: Start the new analysis loop coroutine ---
         _analysisCoroutine = StartCoroutine(AnalysisLoopCoroutine());
         Log("Audio analysis started. Waiting for injected audio data.");
     }
 
-    /// <summary>
-    /// Stops the emotion analysis.
-    /// </summary>
     [ContextMenu("Stop Analysis")]
     public void StopAnalysis()
     {
@@ -268,119 +197,89 @@ public class AudioEmotionRecognizer : MonoBehaviour
             StopCoroutine(_analysisCoroutine);
             _analysisCoroutine = null;
         }
+        
         lock (_audioBuffer)
         {
             _audioBuffer.Clear();
         }
+
         Log("Audio stream analysis stopped.");
     }
 
-    /// <summary>
-    /// Coroutine that periodically processes the accumulated audio buffer.
-    /// This replaces the old StreamAnalysisCoroutine.
-    /// </summary>
     private IEnumerator AnalysisLoopCoroutine()
     {
         while (isAnalyzing)
         {
-            // Wait for the specified interval before processing the next chunk.
             yield return new WaitForSeconds(analysisInterval);
 
             float[] audioChunk;
             int channels;
             int frequency;
 
-            // Lock the buffer to safely copy data and clear it for the next interval.
             lock (_audioBuffer)
             {
-                if (_audioBuffer.Count == 0)
-                {
-                    // No audio data received in the last interval, so skip this cycle.
-                    continue;
-                }
-
+                if (_audioBuffer.Count == 0) continue;
                 audioChunk = _audioBuffer.ToArray();
                 channels = _bufferChannels;
                 frequency = _bufferSampleRate;
                 _audioBuffer.Clear();
             }
 
-            // Check if the audio chunk has enough volume to be worth analyzing.
             float currentVolume = GetRootMeanSquare(audioChunk);
             if (currentVolume < audioGainThreshold)
             {
-                Log($"Current volume ({currentVolume:F4}) is below threshold ({audioGainThreshold:F4}). Skipping.");
                 continue;
             }
 
             Log($"Volume threshold met ({currentVolume:F4}). Analyzing audio chunk of {audioChunk.Length} samples.");
-
-            // Analyze the audio segment and process the result in a callback.
-            yield return StartCoroutine(AnalyzeAudioSegment(audioChunk, frequency, channels, (result) =>
-            {
-                if (result != null)
-                {
-                    result.timestamp = Time.time;
-                    Log($"Emotion Detected: {result.emotion} (Confidence: {result.confidence:F2})");
-                    OnEmotionDetected?.Invoke(result);
-                    ProcessEmotionResult(result);
-                }
-                else
-                {
-                    Log("Analysis did not return a valid emotion.", LogType.Warning);
-                }
-            }));
+            yield return StartCoroutine(AnalyzeAudioSegment(audioChunk, frequency, channels, ProcessEmotionResult));
         }
-    }
-
-
-    private float GetRootMeanSquare(float[] samples)
-    {
-        float sum = 0;
-        for (int i = 0; i < samples.Length; i++)
-        {
-            sum += samples[i] * samples[i]; // sum of squares
-        }
-        return Mathf.Sqrt(sum / samples.Length); // root of the mean
-    }
-
-    private IEnumerator AnalyzeAudioSegment(float[] audioData, int frequency, int channels, Action<EmotionResult> callback)
-    {
-        byte[] wavData = ConvertToWav(audioData, frequency, channels);
-        yield return StartCoroutine(SendAudioToServer(wavData, callback));
     }
 
     private void ProcessEmotionResult(EmotionResult result)
     {
-        Log($"Processing emotion: {result.emotion} with confidence {result.confidence}");
-        recentEmotions.Add(result);
-        if (recentEmotions.Count > 10)
+        if (result == null)
         {
-            recentEmotions.RemoveAt(0);
+            Log("Analysis did not return a valid emotion.", LogType.Warning);
+            return;
         }
+
+        result.timestamp = Time.time;
+        Log($"Emotion Detected: {result.emotion} (Confidence: {result.confidence:F2})");
+        
+        // Invoke local event
+        OnEmotionDetected?.Invoke(result);
+        
+        // Offload to statistics manager
+        if (EmotionStatisticsManager.Instance != null)
+        {
+            EmotionStatisticsManager.Instance.RecordEmotion(result);
+        }
+        else
+        {
+            Log("EmotionStatisticsManager not found. Statistics will not be recorded.", LogType.Error);
+        }
+
+        // Handle animation and state logic
         UpdateEmotionTracking(result);
         ApplyEmotionToBlendshapes(result);
         ApplyEmotionToBody(result);
     }
 
-    #region Initialization
+    #region Initialization and Teardown
     private void InitializeBlendshapeMapping()
     {
-        if (targetRenderer == null) return;
-        Mesh sharedMesh = targetRenderer.sharedMesh;
-        if (sharedMesh == null) return;
-        for (int i = 0; i < sharedMesh.blendShapeCount; i++)
+        if (targetRenderer == null || targetRenderer.sharedMesh == null) return;
+        for (int i = 0; i < targetRenderer.sharedMesh.blendShapeCount; i++)
         {
-            string shapeName = sharedMesh.GetBlendShapeName(i);
-            blendshapeIndices[shapeName] = i;
+            blendshapeIndices[targetRenderer.sharedMesh.GetBlendShapeName(i)] = i;
         }
         Log($"Initialized {blendshapeIndices.Count} blendshapes.");
     }
 
     private void InitializeBodyAnimation()
     {
-        Transform[] bodyParts = { headTransform, spineTransform, leftShoulderTransform,
-                                rightShoulderTransform, leftArmTransform, rightArmTransform };
+        Transform[] bodyParts = { headTransform, spineTransform, leftShoulderTransform, rightShoulderTransform, leftArmTransform, rightArmTransform };
         foreach (var part in bodyParts)
         {
             if (part != null)
@@ -391,19 +290,30 @@ public class AudioEmotionRecognizer : MonoBehaviour
         }
         Log("Body animation transforms initialized.");
     }
+    
+    private void OnDestroy()
+    {
+        StopAnalysis();
+    }
     #endregion
 
     #region Emotion Logic and Application
     private void UpdateEmotionTracking(EmotionResult result)
     {
-        if (result.emotion == emotionState.currentEmotion)
+        // Normalize emotion name before comparison
+        string normalizedEmotion = EmotionStatisticsManager.Instance != null ?
+                                   EmotionStatisticsManager.Instance.NormalizeEmotion(result.emotion) :
+                                   result.emotion.ToLower();
+
+
+        if (normalizedEmotion == emotionState.currentEmotion)
         {
             emotionState.consecutiveCount++;
             emotionState.intensity = Mathf.Max(emotionState.intensity, result.confidence);
         }
         else
         {
-            emotionState.currentEmotion = result.emotion;
+            emotionState.currentEmotion = normalizedEmotion;
             emotionState.consecutiveCount = 1;
             emotionState.intensity = result.confidence;
             emotionState.duration = 0f;
@@ -414,7 +324,7 @@ public class AudioEmotionRecognizer : MonoBehaviour
         {
             emotionState.isPersistent = true;
             emotionState.duration = 0f;
-            Log($"Emotion '{result.emotion}' is now persistent.", LogType.Log);
+            Log($"Emotion '{result.emotion}' is now persistent.");
             OnEmotionStateChanged?.Invoke(emotionState);
         }
     }
@@ -455,8 +365,9 @@ public class AudioEmotionRecognizer : MonoBehaviour
         float intensity = emotionState.isPersistent ? baseIntensity * persistentIntensityMultiplier : baseIntensity;
         
         intensity = Mathf.Clamp(intensity, 0f, 1.5f);
-        
-        switch (emotion.emotion.ToLower())
+
+        // Use the already normalized emotion from the state
+        switch (emotionState.currentEmotion)
         {
             case "happy": ApplyHappyExpression(intensity); break;
             case "sad": ApplySadExpression(intensity); break;
@@ -470,68 +381,13 @@ public class AudioEmotionRecognizer : MonoBehaviour
         OnBlendshapeUpdate?.Invoke(targetBlendshapes);
     }
     
-    private void ApplyHappyExpression(float intensity)
-    {
-        targetBlendshapes.mouthSmileLeft = intensity;
-        targetBlendshapes.mouthSmileRight = intensity;
-        targetBlendshapes.cheekSquintLeft = intensity * 0.9f;
-        targetBlendshapes.cheekSquintRight = intensity * 0.9f;
-        targetBlendshapes.eyeSquintLeft = intensity * 0.6f;
-        targetBlendshapes.eyeSquintRight = intensity * 0.6f;
-        targetBlendshapes.browOuterUpLeft = intensity * 0.4f;
-        targetBlendshapes.browOuterUpRight = intensity * 0.4f;
-    }
-    
-    private void ApplySadExpression(float intensity)
-    {
-        targetBlendshapes.mouthFrownLeft = intensity;
-        targetBlendshapes.mouthFrownRight = intensity;
-        targetBlendshapes.browInnerUp = intensity;
-        targetBlendshapes.mouthLowerDownLeft = intensity * 0.5f;
-        targetBlendshapes.mouthLowerDownRight = intensity * 0.5f;
-    }
-
-    private void ApplyAngryExpression(float intensity)
-    {
-        targetBlendshapes.browDownLeft = intensity;
-        targetBlendshapes.browDownRight = intensity;
-        targetBlendshapes.eyeSquintLeft = intensity;
-        targetBlendshapes.eyeSquintRight = intensity;
-        targetBlendshapes.mouthFrownLeft = intensity * 0.7f;
-        targetBlendshapes.mouthFrownRight = intensity * 0.7f;
-        targetBlendshapes.noseSneerLeft = intensity * 0.8f;
-        targetBlendshapes.noseSneerRight = intensity * 0.8f;
-    }
-    
-    private void ApplyFearExpression(float intensity)
-    {
-        targetBlendshapes.eyeWideLeft = intensity;
-        targetBlendshapes.eyeWideRight = intensity;
-        targetBlendshapes.browInnerUp = intensity;
-        targetBlendshapes.browOuterUpLeft = intensity * 0.9f;
-        targetBlendshapes.browOuterUpRight = intensity * 0.9f;
-        targetBlendshapes.mouthStretchLeft = intensity * 0.8f;
-        targetBlendshapes.mouthStretchRight = intensity * 0.8f;
-        targetBlendshapes.jawOpen = intensity * 0.5f;
-    }
-    
-    private void ApplySurpriseExpression(float intensity)
-    {
-        targetBlendshapes.eyeWideLeft = intensity;
-        targetBlendshapes.eyeWideRight = intensity;
-        targetBlendshapes.browInnerUp = intensity;
-        targetBlendshapes.jawOpen = intensity;
-    }
-
-    private void ApplyDisgustExpression(float intensity)
-    {
-        targetBlendshapes.noseSneerLeft = intensity;
-        targetBlendshapes.noseSneerRight = intensity;
-        targetBlendshapes.mouthFrownLeft = intensity;
-        targetBlendshapes.mouthFrownRight = intensity;
-        targetBlendshapes.eyeSquintLeft = intensity * 0.7f;
-        targetBlendshapes.eyeSquintRight = intensity * 0.7f;
-    }
+    // Expression methods (ApplyHappyExpression, ApplySadExpression, etc.) remain the same
+    private void ApplyHappyExpression(float i) { targetBlendshapes.mouthSmileLeft = i; targetBlendshapes.mouthSmileRight = i; targetBlendshapes.cheekSquintLeft = i * 0.9f; targetBlendshapes.cheekSquintRight = i * 0.9f; targetBlendshapes.eyeSquintLeft = i * 0.6f; targetBlendshapes.eyeSquintRight = i * 0.6f; targetBlendshapes.browOuterUpLeft = i * 0.4f; targetBlendshapes.browOuterUpRight = i * 0.4f; }
+    private void ApplySadExpression(float i) { targetBlendshapes.mouthFrownLeft = i; targetBlendshapes.mouthFrownRight = i; targetBlendshapes.browInnerUp = i; targetBlendshapes.mouthLowerDownLeft = i * 0.5f; targetBlendshapes.mouthLowerDownRight = i * 0.5f; }
+    private void ApplyAngryExpression(float i) { targetBlendshapes.browDownLeft = i; targetBlendshapes.browDownRight = i; targetBlendshapes.eyeSquintLeft = i; targetBlendshapes.eyeSquintRight = i; targetBlendshapes.mouthFrownLeft = i * 0.7f; targetBlendshapes.mouthFrownRight = i * 0.7f; targetBlendshapes.noseSneerLeft = i * 0.8f; targetBlendshapes.noseSneerRight = i * 0.8f; }
+    private void ApplyFearExpression(float i) { targetBlendshapes.eyeWideLeft = i; targetBlendshapes.eyeWideRight = i; targetBlendshapes.browInnerUp = i; targetBlendshapes.browOuterUpLeft = i * 0.9f; targetBlendshapes.browOuterUpRight = i * 0.9f; targetBlendshapes.mouthStretchLeft = i * 0.8f; targetBlendshapes.mouthStretchRight = i * 0.8f; targetBlendshapes.jawOpen = i * 0.5f; }
+    private void ApplySurpriseExpression(float i) { targetBlendshapes.eyeWideLeft = i; targetBlendshapes.eyeWideRight = i; targetBlendshapes.browInnerUp = i; targetBlendshapes.jawOpen = i; }
+    private void ApplyDisgustExpression(float i) { targetBlendshapes.noseSneerLeft = i; targetBlendshapes.noseSneerRight = i; targetBlendshapes.mouthFrownLeft = i; targetBlendshapes.mouthFrownRight = i; targetBlendshapes.eyeSquintLeft = i * 0.7f; targetBlendshapes.eyeSquintRight = i * 0.7f; }
 
     private void ApplyEmotionToBody(EmotionResult emotion)
     {
@@ -541,8 +397,9 @@ public class AudioEmotionRecognizer : MonoBehaviour
         float intensity = emotionState.isPersistent ? baseIntensity * persistentIntensityMultiplier : baseIntensity;
         
         targetBodyAnimation = new BodyAnimation();
-        
-        switch (emotion.emotion.ToLower())
+
+        // Use the already normalized emotion from the state
+        switch (emotionState.currentEmotion)
         {
             case "happy": ApplyHappyBody(intensity); break;
             case "sad": ApplySadBody(intensity); break;
@@ -554,6 +411,7 @@ public class AudioEmotionRecognizer : MonoBehaviour
         }
     }
 
+    // Body animation methods remain the same
     private void ApplyHappyBody(float i) => targetBodyAnimation.headRotation = new Vector3(-5f * i, 0, 0);
     private void ApplySadBody(float i) { targetBodyAnimation.headRotation = new Vector3(15f * i, 0, 0); targetBodyAnimation.spineRotation = new Vector3(8f * i, 0, 0); }
     private void ApplyAngryBody(float i) { targetBodyAnimation.headRotation = new Vector3(-8f * i, 0, 0); targetBodyAnimation.spineRotation = new Vector3(-5f * i, 0, 0); }
@@ -565,132 +423,22 @@ public class AudioEmotionRecognizer : MonoBehaviour
     #endregion
 
     #region Animation Updates
-    private void UpdateBlendshapeAnimation()
-    {
-        currentBlendshapes = LerpBlendshapes(currentBlendshapes, targetBlendshapes, blendshapeTransitionSpeed * Time.deltaTime);
-        ApplyBlendshapesToRenderer(currentBlendshapes);
-    }
-    
-    private void UpdateBodyAnimation()
-    {
-        float speed = bodyAnimationSpeed * Time.deltaTime;
-        currentBodyAnimation.headRotation = Vector3.Lerp(currentBodyAnimation.headRotation, targetBodyAnimation.headRotation, speed);
-        currentBodyAnimation.spineRotation = Vector3.Lerp(currentBodyAnimation.spineRotation, targetBodyAnimation.spineRotation, speed);
-        currentBodyAnimation.leftShoulderRotation = Vector3.Lerp(currentBodyAnimation.leftShoulderRotation, targetBodyAnimation.leftShoulderRotation, speed);
-        currentBodyAnimation.rightShoulderRotation = Vector3.Lerp(currentBodyAnimation.rightShoulderRotation, targetBodyAnimation.rightShoulderRotation, speed);
-        currentBodyAnimation.leftArmRotation = Vector3.Lerp(currentBodyAnimation.leftArmRotation, targetBodyAnimation.leftArmRotation, speed);
-        currentBodyAnimation.rightArmRotation = Vector3.Lerp(currentBodyAnimation.rightArmRotation, targetBodyAnimation.rightArmRotation, speed);
-        currentBodyAnimation.bodyPosition = Vector3.Lerp(currentBodyAnimation.bodyPosition, targetBodyAnimation.bodyPosition, speed);
-        ApplyBodyTransforms();
-    }
-    
-    private BlendshapeWeights LerpBlendshapes(BlendshapeWeights from, BlendshapeWeights to, float t)
-    {
-        BlendshapeWeights result = new BlendshapeWeights();
-        var fromFields = from.GetType().GetFields();
-        var toFields = to.GetType().GetFields();
-        for (int i = 0; i < fromFields.Length; i++)
-        {
-            float fromVal = (float)fromFields[i].GetValue(from);
-            float toVal = (float)toFields[i].GetValue(to);
-            fromFields[i].SetValue(result, Mathf.Lerp(fromVal, toVal, t));
-        }
-        return result;
-    }
-
-    private void ApplyBlendshapesToRenderer(BlendshapeWeights weights)
-    {
-        foreach (var field in weights.GetType().GetFields())
-        {
-            SetBlendshapeWeight(field.Name, (float)field.GetValue(weights));
-        }
-    }
-
-    private void SetBlendshapeWeight(string shapeName, float weight)
-    {
-        if (blendshapeIndices.TryGetValue(shapeName, out int index))
-        {
-            targetRenderer.SetBlendShapeWeight(index, weight * 100f);
-        }
-    }
-
-    private void ApplyBodyTransforms()
-    {
-        if (headTransform != null) headTransform.localRotation = originalRotations[headTransform] * Quaternion.Euler(currentBodyAnimation.headRotation);
-        if (spineTransform != null) { spineTransform.localRotation = originalRotations[spineTransform] * Quaternion.Euler(currentBodyAnimation.spineRotation); spineTransform.localPosition = originalPositions[spineTransform] + currentBodyAnimation.bodyPosition; }
-        if (leftShoulderTransform != null) leftShoulderTransform.localRotation = originalRotations[leftShoulderTransform] * Quaternion.Euler(currentBodyAnimation.leftShoulderRotation);
-        if (rightShoulderTransform != null) rightShoulderTransform.localRotation = originalRotations[rightShoulderTransform] * Quaternion.Euler(currentBodyAnimation.rightShoulderRotation);
-        if (leftArmTransform != null) leftArmTransform.localRotation = originalRotations[leftArmTransform] * Quaternion.Euler(currentBodyAnimation.leftArmRotation);
-        if (rightArmTransform != null) rightArmTransform.localRotation = originalRotations[rightArmTransform] * Quaternion.Euler(currentBodyAnimation.rightArmRotation);
-    }
+    // LerpBlendshapes, ApplyBlendshapesToRenderer, SetBlendshapeWeight, UpdateBlendshapeAnimation, UpdateBodyAnimation, ApplyBodyTransforms
+    // These methods remain unchanged as they are specific to the animation logic of this component.
+    private void UpdateBlendshapeAnimation() { currentBlendshapes = LerpBlendshapes(currentBlendshapes, targetBlendshapes, blendshapeTransitionSpeed * Time.deltaTime); ApplyBlendshapesToRenderer(currentBlendshapes); }
+    private void UpdateBodyAnimation() { float s = bodyAnimationSpeed * Time.deltaTime; currentBodyAnimation.headRotation = Vector3.Lerp(currentBodyAnimation.headRotation, targetBodyAnimation.headRotation, s); currentBodyAnimation.spineRotation = Vector3.Lerp(currentBodyAnimation.spineRotation, targetBodyAnimation.spineRotation, s); currentBodyAnimation.leftShoulderRotation = Vector3.Lerp(currentBodyAnimation.leftShoulderRotation, targetBodyAnimation.leftShoulderRotation, s); currentBodyAnimation.rightShoulderRotation = Vector3.Lerp(currentBodyAnimation.rightShoulderRotation, targetBodyAnimation.rightShoulderRotation, s); currentBodyAnimation.leftArmRotation = Vector3.Lerp(currentBodyAnimation.leftArmRotation, targetBodyAnimation.leftArmRotation, s); currentBodyAnimation.rightArmRotation = Vector3.Lerp(currentBodyAnimation.rightArmRotation, targetBodyAnimation.rightArmRotation, s); currentBodyAnimation.bodyPosition = Vector3.Lerp(currentBodyAnimation.bodyPosition, targetBodyAnimation.bodyPosition, s); ApplyBodyTransforms(); }
+    private BlendshapeWeights LerpBlendshapes(BlendshapeWeights f, BlendshapeWeights t, float time) { var r = new BlendshapeWeights(); var fields = typeof(BlendshapeWeights).GetFields(); for (int i = 0; i < fields.Length; i++) { fields[i].SetValue(r, Mathf.Lerp((float)fields[i].GetValue(f), (float)fields[i].GetValue(t), time)); } return r; }
+    private void ApplyBlendshapesToRenderer(BlendshapeWeights w) { foreach (var f in w.GetType().GetFields()) SetBlendshapeWeight(f.Name, (float)f.GetValue(w)); }
+    private void SetBlendshapeWeight(string n, float w) { if (blendshapeIndices.TryGetValue(n, out int i)) targetRenderer.SetBlendShapeWeight(i, w * 100f); }
+    private void ApplyBodyTransforms() { if (headTransform) headTransform.localRotation = originalRotations[headTransform] * Quaternion.Euler(currentBodyAnimation.headRotation); if (spineTransform) { spineTransform.localRotation = originalRotations[spineTransform] * Quaternion.Euler(currentBodyAnimation.spineRotation); spineTransform.localPosition = originalPositions[spineTransform] + currentBodyAnimation.bodyPosition; } if (leftShoulderTransform) leftShoulderTransform.localRotation = originalRotations[leftShoulderTransform] * Quaternion.Euler(currentBodyAnimation.leftShoulderRotation); if (rightShoulderTransform) rightShoulderTransform.localRotation = originalRotations[rightShoulderTransform] * Quaternion.Euler(currentBodyAnimation.rightShoulderRotation); if (leftArmTransform) leftArmTransform.localRotation = originalRotations[leftArmTransform] * Quaternion.Euler(currentBodyAnimation.leftArmRotation); if (rightArmTransform) rightArmTransform.localRotation = originalRotations[rightArmTransform] * Quaternion.Euler(currentBodyAnimation.rightArmRotation); }
     #endregion
 
     #region Server Communication & Data Conversion
-    private IEnumerator SendAudioToServer(byte[] wavData, Action<EmotionResult> callback)
-    {
-        string url = serverUrl + analyzeEndpoint;
-        Log($"Sending {wavData.Length} bytes of audio data to {url}");
-
-        WWWForm form = new WWWForm();
-        form.AddBinaryData("audio", wavData, "audio.wav", "audio/wav");
-
-        using (UnityWebRequest request = UnityWebRequest.Post(url, form))
-        {
-            yield return request.SendWebRequest();
-
-            if (request.result == UnityWebRequest.Result.Success)
-            {
-                try
-                {
-                    string jsonResponse = request.downloadHandler.text;
-                    Log($"Server Response: {jsonResponse}");
-                    EmotionResult result = JsonUtility.FromJson<EmotionResult>(jsonResponse);
-                    callback?.Invoke(result);
-                }
-                catch (Exception e)
-                {
-                    Log($"Error parsing server response: {e.Message}", LogType.Error);
-                    callback?.Invoke(null);
-                }
-            }
-            else
-            {
-                Log($"Server request failed: {request.error}", LogType.Error);
-                Log($"Response: {request.downloadHandler.text}");
-                callback?.Invoke(null);
-            }
-        }
-    }
-
-    private byte[] ConvertToWav(float[] audioData, int frequency, int channels)
-    {
-        using (MemoryStream stream = new MemoryStream())
-        using (BinaryWriter writer = new BinaryWriter(stream))
-        {
-            int sampleCount = audioData.Length;
-            int byteRate = frequency * channels * 2;
-            writer.Write(Encoding.ASCII.GetBytes("RIFF"));
-            writer.Write(36 + sampleCount * 2);
-            writer.Write(Encoding.ASCII.GetBytes("WAVE"));
-            writer.Write(Encoding.ASCII.GetBytes("fmt "));
-            writer.Write(16);
-            writer.Write((short)1);
-            writer.Write((short)channels);
-            writer.Write(frequency);
-            writer.Write(byteRate);
-            writer.Write((short)(channels * 2));
-            writer.Write((short)16);
-            writer.Write(Encoding.ASCII.GetBytes("data"));
-            writer.Write(sampleCount * 2);
-
-            for (int i = 0; i < sampleCount; i++)
-            {
-                short sample = (short)(audioData[i] * 32767f);
-                writer.Write(sample);
-            }
-            return stream.ToArray();
-        }
-    }
+    // These methods (AnalyzeAudioSegment, SendAudioToServer, ConvertToWav, GetRootMeanSquare) remain unchanged.
+    private IEnumerator AnalyzeAudioSegment(float[] audioData, int frequency, int channels, Action<EmotionResult> callback) { byte[] wavData = ConvertToWav(audioData, frequency, channels); yield return StartCoroutine(SendAudioToServer(wavData, callback)); }
+    private float GetRootMeanSquare(float[] s) { float sum = 0; for (int i = 0; i < s.Length; i++) sum += s[i] * s[i]; return Mathf.Sqrt(sum / s.Length); }
+    private IEnumerator SendAudioToServer(byte[] wavData, Action<EmotionResult> callback) { string url = serverUrl + analyzeEndpoint; Log($"Sending {wavData.Length} bytes to {url}"); WWWForm form = new WWWForm(); form.AddBinaryData("audio", wavData, "audio.wav", "audio/wav"); using (UnityWebRequest req = UnityWebRequest.Post(url, form)) { yield return req.SendWebRequest(); if (req.result == UnityWebRequest.Result.Success) { try { EmotionResult res = JsonUtility.FromJson<EmotionResult>(req.downloadHandler.text); callback?.Invoke(res); } catch (Exception e) { Log($"Error parsing server response: {e.Message}", LogType.Error); callback?.Invoke(null); } } else { Log($"Server request failed: {req.error}\nResponse: {req.downloadHandler.text}", LogType.Error); callback?.Invoke(null); } } }
+    private byte[] ConvertToWav(float[] d, int f, int c) { using (var s = new MemoryStream()) using (var w = new BinaryWriter(s)) { int sc = d.Length; int br = f * c * 2; w.Write(Encoding.ASCII.GetBytes("RIFF")); w.Write(36 + sc * 2); w.Write(Encoding.ASCII.GetBytes("WAVEfmt ")); w.Write(16); w.Write((short)1); w.Write((short)c); w.Write(f); w.Write(br); w.Write((short)(c * 2)); w.Write((short)16); w.Write(Encoding.ASCII.GetBytes("data")); w.Write(sc * 2); for (int i = 0; i < sc; i++) w.Write((short)(d[i] * 32767f)); return s.ToArray(); } }
     #endregion
 
     #region Utility
@@ -704,11 +452,6 @@ public class AudioEmotionRecognizer : MonoBehaviour
             case LogType.Error: Debug.LogError(prefix + message); break;
             default: Debug.Log(prefix + message); break;
         }
-    }
-
-    private void OnDestroy()
-    {
-        StopAnalysis();
     }
     #endregion
 }
